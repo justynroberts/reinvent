@@ -6,10 +6,10 @@ Everything in `terraform/` is plain PagerDuty provider config (`PagerDuty/pagerd
 
 | File | Resources |
 |---|---|
-| `main.tf` | Escalation policy (you as responder), `claims-reconciliation` and `scheduling` technical services, a change-event integration on claims-reconciliation, cross-service intelligent alert grouping on both (compares `source`, the node), the `patient-portal` business service and its two dependencies. `moved` blocks keep an earlier claims-reconciliation in place instead of recreating it. |
+| `main.tf` | Escalation policy (you as responder), `claims-reconciliation` and `scheduling` technical services, a change-event integration on each technical service, cross-service intelligent alert grouping on both (compares `source`, the node), the `patient-portal` business service and its two dependencies. `moved` blocks keep an earlier claims-reconciliation in place instead of recreating it. |
 | `orchestration.tf` | **Reinvent Patient** global orchestration. Its one router rule is dynamic routing: `event.custom_details.service` is looked up as a service name. Unmatched alerts go to claims-reconciliation. Each technical service also has a service orchestration: rule 1 suppresses `info`, and rule 2 matches *Kubernetes* and sets critical, an annotation and `orchestration_rule` (no priority: Major Incident sets P1). |
 | `workflows.tf` | Four incident workflows with the **exact** names, their descriptions, and triggers scoped to `claims-reconciliation`: two conditional (`incident.urgency matches 'high'`) and two manual |
-| `outputs.tf` | `routing_key` (orchestration, for alerts) and `change_routing_key` (service integration, for change events), both sensitive; service, business service and workflow IDs and URLs |
+| `outputs.tf` | `routing_key` (orchestration, for alerts) and `change_routing_keys` (one change integration per service, as a name→key map), both sensitive; service, business service and workflow IDs and URLs |
 
 ## Run it
 
