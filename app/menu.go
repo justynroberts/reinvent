@@ -18,14 +18,6 @@ type menuItem struct {
 	run              func() error
 }
 
-const banner = `
- ██████╗ ███████╗██╗███╗   ██╗██╗   ██╗███████╗███╗   ██╗████████╗
- ██╔══██╗██╔════╝██║████╗  ██║██║   ██║██╔════╝████╗  ██║╚══██╔══╝
- ██████╔╝█████╗  ██║██╔██╗ ██║██║   ██║█████╗  ██╔██╗ ██║   ██║
- ██╔══██╗██╔══╝  ██║██║╚██╗██║╚██╗ ██╔╝██╔══╝  ██║╚██╗██║   ██║
- ██║  ██║███████╗██║██║ ╚████║ ╚████╔╝ ███████╗██║ ╚████║   ██║
- ╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝   ╚═╝`
-
 // ANSI styling; all empty when NO_COLOR is set.
 var (
 	cAccent, cBold, cDim, cGreen, cRed, cInv, cReset = "\033[38;5;79m", "\033[1m", "\033[2m", "\033[32m", "\033[31m", "\033[7m", "\033[0m"
@@ -70,7 +62,7 @@ func cmdMenu() error {
 	defer tty.restore()
 
 	sel := -1
-	stale := true
+	stale, first := true, true
 	var st status
 	for {
 		if stale { // shells out to kind/docker, so only after an action
@@ -79,7 +71,13 @@ func cmdMenu() error {
 		if sel < 0 {
 			sel = indexOf(items, st.next)
 		}
-		draw(items, sel, st)
+		if first {
+			draw(items, sel, st, headerFrame{})
+			animateHeader()
+			first = false
+		} else {
+			draw(items, sel, st, settled)
+		}
 
 		key := tty.readKey()
 		switch key {
@@ -127,15 +125,10 @@ func cmdMenu() error {
 	}
 }
 
-func draw(items []menuItem, sel int, st status) {
+func draw(items []menuItem, sel int, st status, hdr headerFrame) {
 	var b strings.Builder
 	b.WriteString("\033[H\033[2J")
-	if termWidth() >= 68 {
-		b.WriteString(cAccent + cBold + banner + cReset + "\n")
-	} else {
-		b.WriteString("\n " + cAccent + cBold + "R E I N V E N T" + cReset + "\n")
-	}
-	b.WriteString(" " + cDim + "claims-reconciliation · memory leak · PagerDuty demo · " + version + cReset + "\n\n")
+	b.WriteString(header(hdr))
 
 	dot := func(ok bool, yes, no string) string {
 		if ok {
