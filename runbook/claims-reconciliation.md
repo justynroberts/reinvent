@@ -3,11 +3,10 @@
 | | |
 |---|---|
 | **Service** | `claims-reconciliation` (PagerDuty technical service) |
-| **Supports** | `patient-portal`, `scheduling` (business services) |
+| **Supports** | `patient-portal` (business service) |
 | **Runs on** | Kubernetes, namespace `healthcare`, Deployment `claims-reconciliation`, container `app` |
-| **Co-located with** | `patient-portal`, `scheduling` (same node) |
-| **Owner** | Claims Platform team |
-| **Compliance** | Claims acknowledgements (X12 999/277CA) have contractual deadlines. A backlog over 60 minutes is a compliance event: notify Compliance. |
+| **Co-located with** | `scheduling`, `patient-portal` pods (same node) |
+| **Watch** | Claims acknowledgements (X12 999/277CA) have contractual deadlines, so check the `claims.submissions.837` backlog early. |
 
 ## What it does
 
@@ -19,7 +18,7 @@ Consumes claim submissions from the `claims.submissions.837` queue, parses them 
 
 - Container working set grows linearly after a rollout and never plateaus.
 - The container has **no memory limit**, so it is not OOM-killed. It grows until the node hits `MemoryPressure`.
-- The kubelet evicts *other* pods on the node first (`patient-portal`, `scheduling`), so customer-facing services fail before claims-reconciliation does.
+- The kubelet evicts *other* pods on the node first (`patient-portal`, `scheduling`), so customer-facing workloads fail before claims-reconciliation does.
 - The worker thread blocks: heartbeat stops, queue consumer stops acking, and `claims.submissions.837` backs up.
 
 **Most likely cause**
@@ -88,18 +87,12 @@ kubectl apply -f k8s/claims-reconciliation-adhoc-pod.yaml   # same spec, with me
 
 - [ ] New `claims-reconciliation` pod is `Running` and `Ready`. Its limits show `memory: 512Mi`.
 - [ ] Node `MemoryPressure=False`.
-- [ ] `patient-portal` and `scheduling` are rescheduled and `Ready 1/1`.
+- [ ] `scheduling` and `patient-portal` pods are rescheduled and `Ready 1/1`.
 - [ ] Queue depth on `claims.submissions.837` is falling and the consumer is acking.
-- [ ] Business services on the internal status page are back to Operational.
+- [ ] No new `KubePodMemoryNearNodeAllocatable` or `KubeNodeMemoryPressure` alerts for 15 minutes.
 
 ## Follow-up (not during the incident)
 
 - Pin `x12-claims-parser` to `4.2.1` or roll back to `v2.13.4` until upstream fixes buffer pooling.
 - Add a `LimitRange` to `healthcare` so no container ships without a memory limit.
 - Add an alert on working-set growth rate, not only absolute usage.
-
-## Escalation and comms
-
-- **P1** when `patient-portal` or `scheduling` is impacted: run the **Major Incident** workflow (responders, stakeholders, Zoom bridge, Scribe).
-- Update the internal status page for `patient-portal` and `scheduling`.
-- If the queue backlog exceeds 60 minutes, notify Compliance.

@@ -108,3 +108,23 @@ func TestOwnedObjectsMatchTerraform(t *testing.T) {
 		}
 	}
 }
+
+// TestRunbooksExist: the global orchestration links every alert to
+// runbook/<custom_details.service>.md, so each service needs one.
+func TestRunbooksExist(t *testing.T) {
+	sc, err := loadScenario(filepath.Join("..", "payloads", "scenario.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range []string{"claims_service", "scheduling_service"} {
+		p := filepath.Join("..", "runbook", sc.Vars[v]+".md")
+		b, err := os.ReadFile(p)
+		if err != nil {
+			t.Errorf("missing runbook for service %q: %v", sc.Vars[v], err)
+			continue
+		}
+		if strings.Contains(strings.ToLower(string(b)), "escalat") {
+			t.Errorf("%s mentions escalation; runbooks hold troubleshooting steps only", p)
+		}
+	}
+}

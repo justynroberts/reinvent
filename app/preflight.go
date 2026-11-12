@@ -231,6 +231,7 @@ var friendlyKinds = map[string]string{
 	"pagerduty_alert_grouping_setting":      "alert grouping",
 	"pagerduty_event_orchestration":         "event orchestration",
 	"pagerduty_event_orchestration_router":  "orchestration routing",
+	"pagerduty_event_orchestration_global":  "orchestration rules (runbook link)",
 	"pagerduty_event_orchestration_service": "service orchestration rules",
 	"pagerduty_incident_workflow":           "incident workflow",
 	"pagerduty_incident_workflow_trigger":   "workflow trigger",

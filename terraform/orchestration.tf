@@ -1,6 +1,7 @@
 # Event Orchestration, two layers.
 #
-# 1. Global orchestration (router): every alert is sent to its routing key.
+# 1. Global orchestration: every alert is sent to its routing key. Global
+#    rules add a runbook link, then the router picks the service.
 #    Dynamic routing reads custom_details.service and routes to the technical
 #    service with that exact name. Anything without a matching name falls to
 #    the catch-all, which sends it to claims-reconciliation so nothing is lost.
@@ -16,6 +17,40 @@ resource "pagerduty_event_orchestration" "healthcare" {
   name        = "Reinvent Patient"
   description = "Kubernetes alerts for the patient-portal estate. Dynamic routing on custom_details.service to claims-reconciliation or scheduling."
   team        = local.team
+}
+
+# Global rules run before routing. This one adds a link to the runbook for the
+# service the alert is about: custom_details.runbook.github =
+# <runbook_base_url>/<custom_details.service>.md (runbook/*.md in this repo).
+resource "pagerduty_event_orchestration_global" "healthcare" {
+  event_orchestration = pagerduty_event_orchestration.healthcare.id
+
+  set {
+    id = "start"
+
+    rule {
+      label = "Add the service's runbook link (custom_details.runbook.github)"
+      condition {
+        expression = "event.custom_details.service exists"
+      }
+      actions {
+        variable {
+          name  = "service"
+          path  = "event.custom_details.service"
+          type  = "regex"
+          value = "(.*)"
+        }
+        extraction {
+          target   = "event.custom_details.runbook.github"
+          template = "${var.runbook_base_url}/{{variables.service}}.md"
+        }
+      }
+    }
+  }
+
+  catch_all {
+    actions {}
+  }
 }
 
 resource "pagerduty_event_orchestration_router" "healthcare" {
