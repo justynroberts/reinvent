@@ -1,0 +1,32 @@
+{
+  "links": [
+    {
+      "href": "https://github.com/example-health/claims-reconciliation/pull/482",
+      "text": "PR #482: bump x12-claims-parser to 5.0.0"
+    },
+    {
+      "href": "https://github.com/example-health/claims-reconciliation/releases/tag/v2.14.0",
+      "text": "Release v2.14.0"
+    }
+  ],
+  "payload": {
+    "custom_details": {
+      "change_type": "dependency upgrade",
+      "cluster": "reinvent-kind",
+      "dependency_changes": "x12-claims-parser 4.2.1 → 5.0.0 (major). Release notes: streaming segment parser now pools buffers per payer connection.",
+      "deployed_by": "ci-bot (merge of PR #482 'bump x12-claims-parser to 5.x')",
+      "deployment": "claims-reconciliation",
+      "image": "registry.internal/claims/claims-reconciliation:v2.14.0",
+      "namespace": "healthcare",
+      "platform": "kubernetes",
+      "previous_image": "registry.internal/claims/claims-reconciliation:v2.13.4",
+      "resources_changed": "none - container still has no memory limit",
+      "rollout": "RollingUpdate, 1/1 replicas updated",
+      "service": "claims-reconciliation"
+    },
+    "source": "argocd/reinvent-kind",
+    "summary": "Deployed claims-reconciliation v2.14.0 to reinvent-kind/healthcare: upgrades x12-claims-parser 4.2.1 → 5.0.0",
+    "timestamp": "2026-11-12T13:46:02Z"
+  },
+  "routing_key": "YOUR_CLAIMS_RECONCILIATION_CHANGE_KEY"
+}

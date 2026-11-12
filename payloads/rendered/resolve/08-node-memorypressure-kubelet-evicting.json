@@ -1,0 +1,25 @@
+{
+  "client": "Prometheus Alertmanager (reinvent-kind)",
+  "dedup_key": "reinvent/reinvent-control-plane/memory-pressure",
+  "event_action": "resolve",
+  "payload": {
+    "class": "node_memory_pressure",
+    "component": "kubelet",
+    "custom_details": {
+      "alertname": "KubeNodeMemoryPressure",
+      "cluster": "reinvent-kind",
+      "condition": "MemoryPressure=True",
+      "eviction_policy": "kubelet evicts BestEffort/Burstable pods first; claims-reconciliation survives because it has no request/limit to exceed",
+      "memory_available": "212Mi (eviction threshold 300Mi)",
+      "node": "reinvent-control-plane",
+      "platform": "kubernetes",
+      "service": "claims-reconciliation",
+      "top_consumer": "healthcare/claims-reconciliation (7.4Gi working set, no limit)"
+    },
+    "group": "reinvent-kind",
+    "severity": "error",
+    "source": "reinvent-control-plane",
+    "summary": "Kubernetes: node reinvent-control-plane MemoryPressure=True, kubelet evicting pods"
+  },
+  "routing_key": "YOUR_ORCHESTRATION_ROUTING_KEY"
+}

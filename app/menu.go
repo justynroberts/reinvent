@@ -57,6 +57,7 @@ func cmdMenu() error {
 		{"7", "Resolve demo alerts", "Resolves every alert the demo opened.", "", func() error { return cmdResolve(nil) }},
 		{"8", "Reset cluster for next demo", "Puts claims-reconciliation back without a memory limit, so the leak happens again.", "", func() error { return cmdCluster([]string{"reset"}) }},
 		{"9", "Delete PagerDuty objects", "Resolves the alerts, then terraform destroy. Workflow steps you added by hand are lost.", "", func() error { return cmdDestroy(nil) }},
+		{"e", "Export payloads (JSON for curl/Postman)", "Writes every event as plain JSON, with your real routing keys, plus send.sh and resolve.sh, to a \"Reinvent payloads\" folder on your Desktop, and opens it.", "", func() error { return cmdExport([]string{"-keys", "-open"}) }},
 		{"c", "Check this Mac is ready", "Checks internet, your PagerDuty settings, downloads Terraform/kind/kubectl if needed, and checks Docker. Changes nothing.", "", func() error { return cmdDoctor() }},
 		{"g", "Open the setup guide", "Opens the step-by-step guide for the parts done in the PagerDuty web app (Paige, workflow steps, Slack, status page).", "", func() error { return openURL(guideURL) }},
 		{"0", "Delete local cluster", "Deletes the kind cluster and everything in it.", "This deletes the kind cluster and everything in it. Sure?", func() error { return cmdCluster([]string{"down"}) }},
@@ -166,7 +167,7 @@ func draw(items []menuItem, sel int, st status) {
 		}
 	}
 	fmt.Fprintf(&b, "\n  %s%s%s\n", cDim, wrap(items[sel].help, 64, "  "), cReset)
-	fmt.Fprintf(&b, "\n  %s↑↓ move · Enter run · 0-9/c/g jump · q quit · ★ suggested next step%s", cDim, cReset)
+	fmt.Fprintf(&b, "\n  %s↑↓ move · Enter run · 0-9/c/e/g jump · q quit · ★ suggested next step%s", cDim, cReset)
 	fmt.Print(b.String())
 }
 

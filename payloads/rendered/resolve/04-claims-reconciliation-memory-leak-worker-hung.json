@@ -1,0 +1,40 @@
+{
+  "client": "Prometheus Alertmanager (reinvent-kind)",
+  "dedup_key": "reinvent/healthcare/claims-reconciliation/memory-leak",
+  "event_action": "resolve",
+  "links": [
+    {
+      "href": "https://grafana.example-health.internal/d/k8s-pod?var-pod=claims-reconciliation",
+      "text": "Grafana: pod memory"
+    }
+  ],
+  "payload": {
+    "class": "memory_leak",
+    "component": "claims-reconciliation",
+    "custom_details": {
+      "alertname": "KubePodMemoryNearNodeAllocatable",
+      "cluster": "reinvent-kind",
+      "co_located_workloads": "patient-portal, scheduling (same node)",
+      "container": "app",
+      "container_memory_working_set": "7.4Gi",
+      "deployment": "claims-reconciliation",
+      "image": "registry.internal/claims/claims-reconciliation:v2.14.0",
+      "memory_limit": "none (resources.limits.memory not set)",
+      "memory_trend": "linear growth of ~150Mi/min since rollout of v2.14.0 47m ago; flat at ~600Mi on v2.13.4",
+      "namespace": "healthcare",
+      "node": "reinvent-control-plane",
+      "node_allocatable_memory": "7.7Gi",
+      "platform": "kubernetes",
+      "pod_selector": "app=claims-reconciliation",
+      "process_state": "reconciliation worker thread blocked; heartbeat last seen 4m ago; pod still Running and Ready=False",
+      "restarts": 0,
+      "service": "claims-reconciliation",
+      "suspected_change": "x12-claims-parser 4.2.1 → 5.0.0 shipped in v2.14.0"
+    },
+    "group": "healthcare",
+    "severity": "critical",
+    "source": "reinvent-control-plane",
+    "summary": "Kubernetes: claims-reconciliation pod memory at 96% of node allocatable and worker hung (no heartbeat 4m) on reinvent-control-plane"
+  },
+  "routing_key": "YOUR_ORCHESTRATION_ROUTING_KEY"
+}

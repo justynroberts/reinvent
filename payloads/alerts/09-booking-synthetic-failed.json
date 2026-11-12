@@ -1,0 +1,23 @@
+{
+  "event_action": "trigger",
+  "dedup_key": "reinvent/synthetics/book-appointment",
+  "client": "Datadog Synthetics",
+  "payload": {
+    "summary": "Synthetic check failed: \"Book an appointment\" journey on {{.Vars.business_service}} from 3/3 locations (step 4: POST /api/appointments → 503)",
+    "source": "datadog-synthetics",
+    "severity": "critical",
+    "timestamp": "{{now}}",
+    "component": "{{.Vars.business_service}} web",
+    "group": "synthetics",
+    "class": "synthetic_failure",
+    "custom_details": {
+      "service": "{{.Vars.scheduling_service}}",
+      "platform": "datadog-synthetics",
+      "test": "Book an appointment (browser, every 1m)",
+      "failing_step": "4 of 6: submit booking, POST /api/appointments returned 503",
+      "locations": "London, Frankfurt, Dublin (3/3 failing)",
+      "consecutive_failures": 4,
+      "customer_impact": "Patients can't book or change appointments in {{.Vars.business_service}}"
+    }
+  }
+}

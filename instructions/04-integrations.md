@@ -27,5 +27,7 @@ Check: after a run, Service → `claims-reconciliation` → **Recent Changes** l
 If you'd rather use Postman or cURL, as in the original brief:
 
 ```bash
-./trigger run -dry-run          # prints every rendered body; paste one into Postman
+./trigger run -dry-run          # prints every rendered body
+./trigger export -keys -open    # menu e: plain JSON files with your real keys, plus send.sh / resolve.sh
+# payloads/rendered/ in the repo has the same files with placeholder keys
 ```

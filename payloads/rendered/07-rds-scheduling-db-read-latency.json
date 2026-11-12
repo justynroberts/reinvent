@@ -1,0 +1,25 @@
+{
+  "client": "Amazon CloudWatch",
+  "client_url": "https://console.aws.amazon.com/cloudwatch/home#alarmsV2:",
+  "dedup_key": "reinvent/scheduling-db/read-latency",
+  "event_action": "trigger",
+  "payload": {
+    "class": "database_latency",
+    "component": "scheduling-db",
+    "custom_details": {
+      "alarm": "scheduling-db-read-latency-high",
+      "connections": "312 of 400 max; retries from scheduling pods that keep restarting",
+      "cpu": "41% (normal)",
+      "engine": "postgres 15.6",
+      "note": "Connection churn from scheduling restarts, not a database fault.",
+      "platform": "aws-rds",
+      "read_latency_p99": "180ms (normal 12ms)",
+      "service": "scheduling"
+    },
+    "group": "aws-eu-west-1",
+    "severity": "warning",
+    "source": "scheduling-db.c9xk2l.eu-west-1.rds.amazonaws.com",
+    "summary": "RDS scheduling-db: ReadLatency 180ms (threshold 50ms), DatabaseConnections 312 of 400"
+  },
+  "routing_key": "YOUR_ORCHESTRATION_ROUTING_KEY"
+}

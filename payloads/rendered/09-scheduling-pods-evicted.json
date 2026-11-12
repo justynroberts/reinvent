@@ -1,0 +1,27 @@
+{
+  "client": "Prometheus Alertmanager (reinvent-kind)",
+  "dedup_key": "reinvent/healthcare/colocated-evictions",
+  "event_action": "trigger",
+  "payload": {
+    "class": "pod_evicted",
+    "component": "scheduling",
+    "custom_details": {
+      "alertname": "KubeDeploymentReplicasUnavailable",
+      "cluster": "reinvent-kind",
+      "co_located_cause": "healthcare/claims-reconciliation holding 7.4Gi with no memory limit",
+      "customer_impact": "patient-portal: appointment booking returning 503",
+      "evicted_pods": "patient-portal (reason: Evicted, node had MemoryPressure), scheduling (reason: Evicted, node had MemoryPressure)",
+      "namespace": "healthcare",
+      "node": "reinvent-control-plane",
+      "pending_reason": "0/1 nodes available: 1 node(s) had untolerated taint {node.kubernetes.io/memory-pressure}",
+      "platform": "kubernetes",
+      "ready_replicas": "patient-portal 0/1, scheduling 0/1",
+      "service": "scheduling"
+    },
+    "group": "healthcare",
+    "severity": "critical",
+    "source": "reinvent-control-plane",
+    "summary": "Kubernetes: scheduling pods evicted from reinvent-control-plane (MemoryPressure), 0/1 ready; appointment booking down in patient-portal"
+  },
+  "routing_key": "YOUR_ORCHESTRATION_ROUTING_KEY"
+}

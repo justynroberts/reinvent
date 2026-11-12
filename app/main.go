@@ -20,6 +20,7 @@ const usage = `usage: ./trigger              (opens the menu: start here)
 commands:
   setup     check or change region, API key and responder email
   doctor    check this Mac: internet, PagerDuty settings, tools, Docker
+  export    write every event as plain JSON + send.sh/resolve.sh (-keys for real keys)
   plan      terraform init + plan (read-only)
   create    terraform init + apply in terraform/ (prompts unless -auto-approve)
   run       send the scenario in payloads/scenario.json to PagerDuty
@@ -65,6 +66,8 @@ func main() {
 		err = cmdSetup(args)
 	case "doctor":
 		err = cmdDoctor()
+	case "export":
+		err = cmdExport(args)
 	case "version", "-v", "--version":
 		fmt.Println("reinvent", version)
 	case "cluster":

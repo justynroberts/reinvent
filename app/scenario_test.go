@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -54,6 +55,14 @@ func TestPayloadsRender(t *testing.T) {
 			}
 			if svc := routedTo(body); !services[svc] {
 				t.Errorf("%s: custom_details.service %q must be one of the technical services %v (dynamic routing looks it up by name)", st.Name, svc, services)
+			}
+			// The service EO rule keys on "Kubernetes": Kubernetes alerts must say
+			// so, and the other tools' alerts must not, or they'd be escalated too.
+			cd, _ := p["custom_details"].(map[string]any)
+			summ, _ := p["summary"].(string)
+			k8s := cd["platform"] == "kubernetes"
+			if mentions := strings.Contains(strings.ToLower(summ), "kubernetes"); mentions != k8s {
+				t.Errorf("%s: platform %v but summary mentions Kubernetes = %v; keep them consistent for the EO rule", st.Name, cd["platform"], mentions)
 			}
 			if sev, _ := p["severity"].(string); !severities[sev] {
 				t.Errorf("%s: severity %q invalid", st.Name, sev)
@@ -129,5 +138,39 @@ func TestRunbooksExist(t *testing.T) {
 		if strings.Contains(strings.ToLower(string(b)), "escalat") {
 			t.Errorf("%s mentions escalation; runbooks hold troubleshooting steps only", p)
 		}
+	}
+}
+
+// TestRenderedUpToDate: payloads/rendered (committed, for use outside this
+// app) must match the templates. Regenerate with: ./trigger export
+func TestRenderedUpToDate(t *testing.T) {
+	sc, err := loadScenario(filepath.Join("..", "payloads", "scenario.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, err := renderExport(sc, placeholderAlertKey, func(svc string) string {
+		return fmt.Sprintf(placeholderChange, strings.ToUpper(strings.ReplaceAll(svc, "-", "_")))
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := regexp.MustCompile(`"(timestamp|first_seen)": "[^"]*"`)
+	norm := func(b []byte) string { return ts.ReplaceAllString(string(b), `"$1": "-"`) }
+	dir := filepath.Join("..", "payloads", "rendered")
+	for name, want := range files {
+		got, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil || norm(got) != norm(want) {
+			t.Errorf("payloads/rendered/%s is out of date; run ./trigger export", name)
+		}
+	}
+	var onDisk int
+	filepath.Walk(dir, func(p string, fi os.FileInfo, err error) error {
+		if err == nil && !fi.IsDir() {
+			onDisk++
+		}
+		return nil
+	})
+	if onDisk != len(files) {
+		t.Errorf("payloads/rendered has %d files, expected %d; run ./trigger export", onDisk, len(files))
 	}
 }

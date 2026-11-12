@@ -46,8 +46,11 @@ Each beat lists what to say, what's on screen, and the setup it depends on.
 - Then the real alerts arrive at one front door, the **Reinvent Patient** orchestration, all mentioning **Kubernetes**. **Dynamic routing** reads each alert's `service` field: the memory leak, node `MemoryPressure` and claims queue backlog go to `claims-reconciliation`; the evicted pods go to `scheduling`.
 - Each service's EO rule matches *Kubernetes*, raises it to **critical**, and adds an annotation that points at the change and the runbook. No priority yet: that's a human call (beat 5).
 - **Cross-service Intelligent Alert Grouping** (one grouping setting covering both services, comparing the alert `source`, which is the node) folds alerts from `claims-reconciliation` **and** `scheduling` into **one incident**.
-- Both services light up. `claims-reconciliation` gets the memory leak, node pressure and queue backlog. `scheduling` gets latency with readiness failing, then the eviction, then 503s at the ingress.
-- **Say:** "One orchestration, no routing table: each alert says which service it belongs to. Seven alerts on two services, one incident, because PagerDuty saw they share a node. Scheduling looks like the broken one, and it even shipped a change today, but it's a victim."
+- Both services light up, from several tools, about 2 seconds apart:
+  - `claims-reconciliation`: the memory leak, a **Splunk** spike of `X12ParseException` errors, node pressure, the queue backlog, then the **clearinghouse** reporting overdue acknowledgements.
+  - `scheduling`: latency with readiness failing, **CloudWatch** RDS read latency, the eviction, 503s at the ingress, then a **Datadog synthetic** "book an appointment" journey failing.
+- Only the Kubernetes alerts are raised to critical by the rule. The rest arrive at their own severity, like they would in real life.
+- **Say:** "One orchestration, no routing table: each alert says which service it belongs to. Eleven alerts from five tools on two services, and PagerDuty groups the ones that share a node. Scheduling looks like the broken one, and it even shipped a change today, but it's a victim."
 - *Depends on:* global orchestration with dynamic routing, service EO rules, cross-service alert grouping (intelligent grouping learns, so the first run on a new account may not group; `alert_grouping_type = "content_based"` makes it deterministic) ([02](../instructions/02-terraform.md)).
 
 ### 3. Business impact is visible immediately

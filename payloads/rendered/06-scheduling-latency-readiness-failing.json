@@ -1,0 +1,28 @@
+{
+  "client": "Prometheus Alertmanager (reinvent-kind)",
+  "dedup_key": "reinvent/healthcare/scheduling-latency",
+  "event_action": "trigger",
+  "payload": {
+    "class": "latency",
+    "component": "scheduling",
+    "custom_details": {
+      "alertname": "SchedulingLatencySLOBreach",
+      "cluster": "reinvent-kind",
+      "container_memory": "41Mi of 64Mi limit (normal)",
+      "cpu_throttling": "28% of periods throttled; node CPU steal rising as memory reclaim kicks in",
+      "deployment": "scheduling",
+      "namespace": "healthcare",
+      "node": "reinvent-control-plane",
+      "note": "Scheduling's own memory is normal. The node is under memory pressure.",
+      "p95_latency": "2.4s (SLO 500ms, normal 120ms)",
+      "platform": "kubernetes",
+      "readiness_probe": "3 of last 5 failed (timeout 1s)",
+      "service": "scheduling"
+    },
+    "group": "healthcare",
+    "severity": "warning",
+    "source": "reinvent-control-plane",
+    "summary": "Kubernetes: scheduling p95 latency 2.4s (SLO 500ms), readiness probe failing on reinvent-control-plane"
+  },
+  "routing_key": "YOUR_ORCHESTRATION_ROUTING_KEY"
+}

@@ -1,0 +1,23 @@
+{
+  "client": "Availity gateway monitor",
+  "dedup_key": "reinvent/clearinghouse/999-ack-delay",
+  "event_action": "resolve",
+  "payload": {
+    "class": "sla_risk",
+    "component": "x12-gateway",
+    "custom_details": {
+      "claims_waiting": 1206,
+      "gateway_status": "healthy: SFTP up, last poll 30s ago",
+      "note": "Gateway is fine; nothing is being sent because the reconciliation consumer stopped.",
+      "oldest_unacknowledged": "14m (contractual SLA 15m)",
+      "partner": "Availity",
+      "platform": "clearinghouse",
+      "service": "claims-reconciliation"
+    },
+    "group": "payer-connectivity",
+    "severity": "warning",
+    "source": "availity-sftp-gateway",
+    "summary": "Clearinghouse: 999 acknowledgements for 837 submissions overdue, oldest 14m (SLA 15m), 1,206 claims waiting"
+  },
+  "routing_key": "YOUR_ORCHESTRATION_ROUTING_KEY"
+}

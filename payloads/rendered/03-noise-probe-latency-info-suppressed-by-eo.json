@@ -1,0 +1,19 @@
+{
+  "dedup_key": "reinvent/healthcare/claims-reconciliation/probe-latency",
+  "event_action": "trigger",
+  "payload": {
+    "class": "probe_latency",
+    "component": "claims-reconciliation",
+    "custom_details": {
+      "cluster": "reinvent-kind",
+      "note": "Info-level noise. The Event Orchestration suppresses it, so it never pages anyone.",
+      "platform": "kubernetes",
+      "service": "claims-reconciliation"
+    },
+    "group": "healthcare",
+    "severity": "info",
+    "source": "reinvent-control-plane",
+    "summary": "Kubernetes: liveness probe latency 1.2s on claims-reconciliation (threshold 1s)"
+  },
+  "routing_key": "YOUR_ORCHESTRATION_ROUTING_KEY"
+}
