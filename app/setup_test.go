@@ -39,3 +39,23 @@ func TestMask(t *testing.T) {
 		t.Errorf("short mask = %q", got)
 	}
 }
+
+func TestRunTracking(t *testing.T) {
+	dir := t.TempDir()
+	if got := openRuns(dir); len(got) != 1 || got[0] != "" {
+		t.Errorf("untracked copy should resolve the old fixed keys, got %q", got)
+	}
+	if err := saveRuns(dir, []string{"run-a", "run-b"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := openRuns(dir); len(got) != 2 || got[1] != "run-b" {
+		t.Errorf("openRuns = %q", got)
+	}
+	saveRuns(dir, nil)
+	if got := openRuns(dir); len(got) != 0 {
+		t.Errorf("after resolve, openRuns = %q, want none", got)
+	}
+	if runKey("reinvent/x", "run-a") != "reinvent/x/run-a" || runKey("reinvent/x", "") != "reinvent/x" {
+		t.Error("runKey suffix wrong")
+	}
+}

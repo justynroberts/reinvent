@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const usage = `usage: ./trigger              (opens the menu: start here)
@@ -207,7 +208,7 @@ func cmdCreate(args []string) error {
 	if err := planAndApply(c.tfDir(), vars, false, *auto, false); err != nil {
 		return err
 	}
-	fmt.Println("\nNext: the few steps done in the PagerDuty web app (menu: \"Open the setup guide\"), then RUN THE DEMO.")
+	fmt.Println("\nNext: the few steps done in the PagerDuty web app (SETUP → 6 \"Open the setup guide\"), then DEMO → 1 RUN THE DEMO.")
 	return nil
 }
 
@@ -227,15 +228,32 @@ func cmdRun(args []string) error {
 		return err
 	}
 	key, ckeys := "DRY-RUN", map[string]string{"*": "DRY-RUN"}
-	if !*dry {
-		if key, err = c.key(); err != nil {
-			return err
-		}
-		if ckeys, err = c.changeKeys(); err != nil {
-			return err
-		}
+	if *dry {
+		return sc.Run(newSender(key, ckeys, true), runOptions{noWait: *fast, only: *only})
 	}
-	return sc.Run(newSender(key, ckeys, *dry), runOptions{noWait: *fast, only: *only})
+	if key, err = c.key(); err != nil {
+		return err
+	}
+	if ckeys, err = c.changeKeys(); err != nil {
+		return err
+	}
+	s := newSender(key, ckeys, false)
+	// Start clean: close the previous run so this one opens fresh incidents.
+	if prev := openRuns(c.root); len(prev) > 0 {
+		fmt.Println("Closing the previous demo run first, so this one opens fresh incidents.")
+		if err := resolveOpenRuns(c.root, sc, s); err != nil {
+			return err
+		}
+		fmt.Println("Waiting 5s for PagerDuty to close them…")
+		time.Sleep(5 * time.Second)
+		fmt.Println()
+	}
+	id := newRunID()
+	if err := saveRuns(c.root, append(openRuns(c.root), id)); err != nil {
+		return err
+	}
+	fmt.Printf("Demo run %s\n", id)
+	return sc.Run(s, runOptions{noWait: *fast, only: *only, runID: id})
 }
 
 func cmdResolve(args []string) error {
@@ -257,7 +275,7 @@ func cmdResolve(args []string) error {
 			return err
 		}
 	}
-	return sc.Resolve(newSender(key, nil, *dry))
+	return resolveOpenRuns(c.root, sc, newSender(key, nil, *dry))
 }
 
 func cmdDestroy(args []string) error {
@@ -279,7 +297,7 @@ func cmdDestroy(args []string) error {
 			fmt.Fprintln(os.Stderr, "warning: skipping resolve:", err)
 		} else if sc, err := loadScenario(c.scenarioPath()); err != nil {
 			fmt.Fprintln(os.Stderr, "warning: skipping resolve:", err)
-		} else if err := sc.Resolve(newSender(key, nil, false)); err != nil {
+		} else if err := resolveOpenRuns(c.root, sc, newSender(key, nil, false)); err != nil {
 			fmt.Fprintln(os.Stderr, "warning: resolve failed, continuing:", err)
 		}
 	}
@@ -327,9 +345,9 @@ func (c *common) notReady(cause error) error {
 	created, outdated := tfState(filepath.Join(c.tfDir(), "terraform.tfstate"))
 	switch {
 	case !created:
-		return errors.New("the PagerDuty objects haven't been created yet. Choose \"Create / update PagerDuty objects\" (3) first")
+		return errors.New("the PagerDuty objects haven't been created yet. In the menu, go to SETUP → 4 \"Create / update PagerDuty objects\" first")
 	case outdated:
-		return errors.New("your PagerDuty setup is from an older version of Reinvent. Choose \"Create / update PagerDuty objects\" (3) to update it, then run the demo again")
+		return errors.New("your PagerDuty setup is from an older version of Reinvent. In the menu, go to SETUP → 4 \"Create / update PagerDuty objects\" to update it, then run the demo again")
 	}
 	return fmt.Errorf("couldn't read the routing key from Terraform: %w", cause)
 }

@@ -33,7 +33,7 @@ func cmdDoctor() error {
 	check("Internet access to PagerDuty", err, "Check your connection, VPN or proxy.")
 
 	s, err := ensureSetup(c.root)
-	check("PagerDuty settings (region, API key, email)", err, "Run menu option 1.")
+	check("PagerDuty settings (region, API key, email)", err, "In the menu: SETUP → 1 PagerDuty settings.")
 	_ = s
 
 	for _, t := range []string{"terraform", "kind", "kubectl"} {

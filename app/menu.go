@@ -15,8 +15,18 @@ import (
 type menuItem struct {
 	key, label, help string
 	confirm          string // non-empty: ask before running
+	confirmYes       bool   // Enter means yes for this confirm
 	run              func() error
 }
+
+// The menu has two pages. DEMO is what you use on stage; SETUP is everything
+// you do once. The menu opens on DEMO when setup is complete.
+const (
+	pageSetup = iota
+	pageDemo
+)
+
+var pageNames = []string{"SETUP", "DEMO"}
 
 // ANSI styling; all empty when NO_COLOR is set.
 var (
@@ -35,24 +45,29 @@ func cmdMenu() error {
 	if err := c.resolveRoot(); err != nil {
 		return err
 	}
-	items := []menuItem{
-		{"1", "PagerDuty settings", "Region (US/EU), API key and your email. Each one is checked against PagerDuty and saved to .env.", "", func() error {
-			confirmed = nil
-			_, err := ensureSetup(c.root)
-			return err
-		}},
-		{"2", "Preview PagerDuty changes", "terraform plan. Read-only: shows what would be created or changed.", "", func() error { return cmdPlan(nil) }},
-		{"3", "Create / update PagerDuty objects", "terraform apply: services, business service, EP, grouping, orchestrations and workflow shells. Also run this after installing a new version of Reinvent. Then do the manual steps in the setup guide.", "", func() error { return cmdCreate(nil) }},
-		{"4", "Start cluster + workloads", "Creates the local kind cluster if needed (Docker must be running) and applies the demo workloads.", "", func() error { return cmdCluster([]string{"up"}) }},
-		{"5", "RUN THE DEMO", "Sends the change event, then the alerts, with pauses between them. Opens a real incident.", "This sends real alerts and opens an incident. Go?", func() error { return cmdRun(nil) }},
-		{"6", "Preview demo events", "Prints every event that RUN THE DEMO would send. Sends nothing.", "", func() error { return cmdRun([]string{"-dry-run", "-no-wait"}) }},
-		{"7", "Resolve demo alerts", "Resolves every alert the demo opened.", "", func() error { return cmdResolve(nil) }},
-		{"8", "Reset cluster for next demo", "Puts claims-reconciliation back without a memory limit, so the leak happens again.", "", func() error { return cmdCluster([]string{"reset"}) }},
-		{"9", "Delete PagerDuty objects", "Resolves the alerts, then terraform destroy. Workflow steps you added by hand are lost.", "", func() error { return cmdDestroy(nil) }},
-		{"e", "Export payloads (JSON for curl/Postman)", "Writes every event as plain JSON, with your real routing keys, plus send.sh and resolve.sh, to a \"Reinvent payloads\" folder on your Desktop, and opens it.", "", func() error { return cmdExport([]string{"-keys", "-open"}) }},
-		{"c", "Check this Mac is ready", "Checks internet, your PagerDuty settings, downloads Terraform/kind/kubectl if needed, and checks Docker. Changes nothing.", "", func() error { return cmdDoctor() }},
-		{"g", "Open the setup guide", "Opens the step-by-step guide for the parts done in the PagerDuty web app (Paige, workflow steps, Slack, status page).", "", func() error { return openURL(guideURL) }},
-		{"0", "Delete local cluster", "Deletes the kind cluster and everything in it.", "This deletes the kind cluster and everything in it. Sure?", func() error { return cmdCluster([]string{"down"}) }},
+	pages := [][]menuItem{
+		pageSetup: {
+			{"1", "PagerDuty settings", "Region (US/EU), API key and your email. Each one is checked against PagerDuty and saved.", "", false, func() error {
+				confirmed = nil
+				_, err := ensureSetup(c.root)
+				return err
+			}},
+			{"2", "Check this Mac is ready", "Checks internet and your PagerDuty settings, downloads Terraform/kind/kubectl if needed, and checks Docker. Changes nothing.", "", false, func() error { return cmdDoctor() }},
+			{"3", "Preview PagerDuty changes", "Shows what would be created, updated or deleted in PagerDuty. Changes nothing.", "", false, func() error { return cmdPlan(nil) }},
+			{"4", "Create / update PagerDuty objects", "Creates the services, business service, orchestrations and workflows, showing you the list first. Run it again after installing a new version of Reinvent.", "", false, func() error { return cmdCreate(nil) }},
+			{"5", "Start cluster + workloads (optional)", "Creates the local Kubernetes cluster and the demo workloads. Needs Docker. Only the remediation part of the story uses it.", "", false, func() error { return cmdCluster([]string{"up"}) }},
+			{"6", "Open the setup guide", "The few steps done in the PagerDuty web app (Paige on the escalation policy, Kubernetes workflow steps, Slack, status page).", "", false, func() error { return openURL(guideURL) }},
+			{"7", "Delete PagerDuty objects", "Resolves open demo alerts, then deletes everything Reinvent created in PagerDuty, after showing you the list.", "", false, func() error { return cmdDestroy(nil) }},
+			{"8", "Delete local cluster", "Deletes the Kubernetes cluster and everything in it.", "This deletes the local cluster and everything in it. Sure?", false, func() error { return cmdCluster([]string{"down"}) }},
+		},
+		pageDemo: {
+			{"1", "RUN THE DEMO", "Closes any previous run, then sends 2 change events and 11 alerts over about 30 seconds. Opens real incidents.", "Send the demo events to PagerDuty now?", true, func() error { return cmdRun(nil) }},
+			{"2", "Resolve the demo", "Resolves every alert from demo runs that are still open. Do this when you've finished presenting.", "", false, func() error { return cmdResolve(nil) }},
+			{"3", "Reset cluster for next demo", "Puts claims-reconciliation back without a memory limit, so the leak happens again. Only if you use the cluster.", "", false, func() error { return cmdCluster([]string{"reset"}) }},
+			{"4", "Preview demo events", "Prints every event RUN THE DEMO would send. Sends nothing.", "", false, func() error { return cmdRun([]string{"-dry-run", "-no-wait"}) }},
+			{"5", "Export payloads (curl/Postman)", "Writes every event as plain JSON with your real routing keys, plus send.sh and resolve.sh, to a \"Reinvent payloads\" folder on your Desktop.", "", false, func() error { return cmdExport([]string{"-keys", "-open"}) }},
+			{"6", "Open the demo script", "The story, beat by beat: what to show and what to say.", "", false, func() error { return openURL(storyURL) }},
+		},
 	}
 
 	tty, err := newRawTTY()
@@ -61,22 +76,26 @@ func cmdMenu() error {
 	}
 	defer tty.restore()
 
-	sel := -1
-	stale, first := true, true
-	var st status
+	st := readStatus(c.root)
+	page := pageSetup
+	if st.setupDone() {
+		page = pageDemo
+	}
+	sel, first := -1, true
 	for {
-		if stale { // shells out to kind/docker, so only after an action
-			st, stale = readStatus(c.root), false
+		items := pages[page]
+		next := st.next(page)
+		if sel < 0 || sel >= len(items) {
+			sel = max(indexOf(items, next), 0)
 		}
-		if sel < 0 {
-			sel = indexOf(items, st.next)
-		}
+		hdr := settled
 		if first {
-			draw(items, sel, st, headerFrame{})
+			hdr = headerFrame{}
+		}
+		draw(items, sel, st, page, next, hdr)
+		if first {
 			animateHeader()
 			first = false
-		} else {
-			draw(items, sel, st, settled)
 		}
 
 		key := tty.readKey()
@@ -84,8 +103,11 @@ func cmdMenu() error {
 		case "up", "k":
 			sel = (sel + len(items) - 1) % len(items)
 			continue
-		case "down", "j", "tab":
+		case "down", "j":
 			sel = (sel + 1) % len(items)
+			continue
+		case "left", "right", "tab":
+			page, sel = 1-page, -1
 			continue
 		case "q", "esc", "ctrl-d":
 			tty.restore()
@@ -106,9 +128,10 @@ func cmdMenu() error {
 		fmt.Printf("%s%s▸ %s%s\n%s%s%s\n\n", cAccent, cBold, it.label, cReset, cDim, it.help, cReset)
 		run := true
 		if it.confirm != "" {
-			ok, err := askYesNo(it.confirm, false)
+			ok, err := askYesNo(it.confirm, it.confirmYes)
 			run = err == nil && ok
 		}
+		wasDone := st.setupDone()
 		if run {
 			if err := it.run(); err != nil {
 				fmt.Printf("\n%s✗ That didn't work:%s %v\n", cRed, cReset, err)
@@ -119,13 +142,17 @@ func cmdMenu() error {
 		} else {
 			fmt.Println("Skipped.")
 		}
-		stale = true
+		st = readStatus(c.root)
+		if !wasDone && st.setupDone() {
+			page, sel = pageDemo, -1
+			fmt.Printf("\n%sSetup is complete. The menu now opens on the DEMO page.%s\n", cGreen, cReset)
+		}
 		ask(cDim + "Press Enter to go back to the menu… " + cReset)
 		tty.raw()
 	}
 }
 
-func draw(items []menuItem, sel int, st status, hdr headerFrame) {
+func draw(items []menuItem, sel int, st status, page int, next string, hdr headerFrame) {
 	var b strings.Builder
 	b.WriteString("\033[H\033[2J")
 	b.WriteString(header(hdr))
@@ -139,28 +166,45 @@ func draw(items []menuItem, sel int, st status, hdr headerFrame) {
 	fmt.Fprintf(&b, "  %-12s %s\n", "Settings", dot(st.ready, st.settings, "not set up"))
 	switch {
 	case st.created && st.outdated:
-		fmt.Fprintf(&b, "  %-12s %s! needs update%s (choose 3)\n", "PagerDuty", cRed, cReset)
+		fmt.Fprintf(&b, "  %-12s %s! needs update%s (SETUP → 4)\n", "PagerDuty", cRed, cReset)
 	default:
 		fmt.Fprintf(&b, "  %-12s %s\n", "PagerDuty", dot(st.created, "objects created", "nothing created yet"))
 	}
-	fmt.Fprintf(&b, "  %-12s %s\n\n", "Cluster", dot(st.cluster, "kind-"+kindName+" running", "not running"))
+	fmt.Fprintf(&b, "  %-12s %s\n", "Cluster", dot(st.cluster, "kind-"+kindName+" running", "not running (optional)"))
+	demo := cDim + "○ nothing open" + cReset
+	if st.demoOpen {
+		demo = cAccent + "● a demo run is open" + cReset + cDim + " (resolve it when you're done)" + cReset
+	}
+	fmt.Fprintf(&b, "  %-12s %s\n\n", "Demo", demo)
+
+	// Page tabs
+	b.WriteString("  ")
+	for i, name := range pageNames {
+		if i == page {
+			fmt.Fprintf(&b, "%s%s%s %s %s", cInv, cAccent, cBold, name, cReset)
+		} else {
+			fmt.Fprintf(&b, "%s %s %s", cDim, name, cReset)
+		}
+		b.WriteString("  ")
+	}
+	b.WriteString(cDim + "← → switch" + cReset + "\n\n")
 
 	for i, it := range items {
 		hint := "  "
-		if it.key == st.next {
+		if it.key == next {
 			hint = cAccent + "★ " + cReset
 		}
-		if i == 4 || i == 8 || i == 10 {
+		if page == pageSetup && it.key == "7" {
 			b.WriteString("  " + cDim + strings.Repeat("─", 40) + cReset + "\n")
 		}
 		if i == sel {
-			fmt.Fprintf(&b, "  %s%s %s  %-34s %s%s\n", cInv, cAccent, it.key, it.label, cReset, hint)
+			fmt.Fprintf(&b, "  %s%s %s  %-36s %s%s\n", cInv, cAccent, it.key, it.label, cReset, hint)
 		} else {
-			fmt.Fprintf(&b, "   %s%s%s  %-34s %s\n", cDim, it.key, cReset, it.label, hint)
+			fmt.Fprintf(&b, "   %s%s%s  %-36s %s\n", cDim, it.key, cReset, it.label, hint)
 		}
 	}
 	fmt.Fprintf(&b, "\n  %s%s%s\n", cDim, wrap(items[sel].help, 64, "  "), cReset)
-	fmt.Fprintf(&b, "\n  %s↑↓ move · Enter run · 0-9/c/e/g jump · q quit · ★ suggested next step%s", cDim, cReset)
+	fmt.Fprintf(&b, "\n  %s↑↓ move · Enter run · number jumps · ← → SETUP/DEMO · q quit · ★ suggested%s", cDim, cReset)
 	fmt.Print(b.String())
 }
 
@@ -268,6 +312,10 @@ func (t *rawTTY) readKey() string {
 			return "up"
 		case 'B':
 			return "down"
+		case 'C':
+			return "right"
+		case 'D':
+			return "left"
 		}
 		return ""
 	}
@@ -280,7 +328,32 @@ type status struct {
 	created  bool
 	outdated bool // applied by an older version: outputs this version needs are missing
 	cluster  bool
-	next     string
+	demoOpen bool
+}
+
+// setupDone: everything the demo needs is in place (the cluster is optional).
+func (st status) setupDone() bool { return st.ready && st.created && !st.outdated }
+
+// next is the suggested item (★) on a page.
+func (st status) next(page int) string {
+	if page == pageSetup {
+		switch {
+		case !st.ready:
+			return "1"
+		case !st.created || st.outdated:
+			return "4"
+		case !st.cluster:
+			return "5"
+		}
+		return ""
+	}
+	if !st.setupDone() {
+		return ""
+	}
+	if st.demoOpen {
+		return "2"
+	}
+	return "1"
 }
 
 func readStatus(root string) status {
@@ -296,17 +369,8 @@ func readStatus(root string) status {
 	st.settings = fmt.Sprintf("%s · %s · key %s", strings.ToUpper(region), email, mask(tok))
 	st.created, st.outdated = tfState(filepath.Join(root, "terraform", "terraform.tfstate"))
 	st.cluster = kindExists()
-
-	switch {
-	case !st.ready:
-		st.next = "1"
-	case !st.created || st.outdated:
-		st.next = "3"
-	case !st.cluster:
-		st.next = "4"
-	default:
-		st.next = "5"
-	}
+	runs := openRuns(root)
+	st.demoOpen = len(runs) > 0 && !(len(runs) == 1 && runs[0] == "")
 	return st
 }
 
@@ -336,6 +400,9 @@ func tfState(path string) (created, outdated bool) {
 
 // guideURL is the setup guide on GitHub (the manual, in-browser steps).
 const guideURL = "https://github.com/" + githubRepo + "/tree/main/instructions"
+
+// storyURL is the demo script.
+const storyURL = "https://github.com/" + githubRepo + "/blob/main/story/README.md"
 
 func openURL(u string) error {
 	fmt.Println("Opening", u)

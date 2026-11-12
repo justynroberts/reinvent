@@ -160,7 +160,7 @@ func stateIDs(path string) map[string]bool {
 
 // planAndApply runs Terraform quietly, shows a plain-English summary of what
 // will change, asks y/N (unless auto), then applies exactly that plan.
-// previewOnly stops after the summary (menu option 2).
+// previewOnly stops after the summary (SETUP → 3).
 func planAndApply(dir string, vars []string, destroy, auto, previewOnly bool) error {
 	fmt.Println("Talking to PagerDuty…")
 	if out, err := terraformQuiet(dir, "init", "-input=false"); err != nil {
@@ -306,9 +306,9 @@ func tfFailed(what, out string, err error) error {
 	hint := "The details are below. If you're stuck, send them to whoever gave you Reinvent."
 	switch {
 	case strings.Contains(low, "401") || strings.Contains(low, "unauthorized"):
-		hint = "PagerDuty rejected the API key. Choose \"PagerDuty settings\" (1) and enter a new key, and check the region (US/EU)."
+		hint = "PagerDuty rejected the API key. In the menu, go to SETUP → 1 \"PagerDuty settings\" and enter a new key, and check the region (US/EU)."
 	case strings.Contains(low, "403") || strings.Contains(low, "forbidden") || strings.Contains(low, "access denied"):
-		hint = "The API key isn't allowed to do this. Use an account-level REST API key with read/write access (Integrations → API Access Keys), then choose \"PagerDuty settings\" (1)."
+		hint = "The API key isn't allowed to do this. Use an account-level REST API key with read/write access (Integrations → API Access Keys), then go to SETUP → 1 \"PagerDuty settings\"."
 	case strings.Contains(low, "already") && (strings.Contains(low, "taken") || strings.Contains(low, "exists")):
 		hint = "Something with the same name already exists in PagerDuty. Delete or rename it there, then try again."
 	case strings.Contains(low, "no such host") || strings.Contains(low, "timeout") || strings.Contains(low, "connection refused"):

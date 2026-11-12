@@ -39,7 +39,7 @@ func (s *sender) send(kind string, body map[string]any) error {
 			k, ok = s.changeKeys["*"]
 		}
 		if !ok {
-			return fmt.Errorf("no change-event key for service %q. Choose \"Create / update PagerDuty objects\" (3), then try again", svc)
+			return fmt.Errorf("no change-event key for service %q. In the menu, go to SETUP → 4 \"Create / update PagerDuty objects\", then try again", svc)
 		}
 		body["routing_key"] = k
 		path = "/v2/change/enqueue"

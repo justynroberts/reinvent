@@ -31,6 +31,7 @@ type Step struct {
 type runOptions struct {
 	noWait bool
 	only   string
+	runID  string // appended to every alert's dedup_key (see runs.go)
 }
 
 func loadScenario(path string) (*Scenario, error) {
@@ -100,6 +101,9 @@ func (sc *Scenario) Run(s *sender, opt runOptions) error {
 		if err != nil {
 			return err
 		}
+		if k, ok := body["dedup_key"].(string); ok && st.Type == "alert" {
+			body["dedup_key"] = runKey(k, opt.runID)
+		}
 		fmt.Printf("[%d/%d] %s (%s)\n", i+1, len(sc.Steps), st.Name, st.Type)
 		if err := s.send(st.Type, body); err != nil {
 			return fmt.Errorf("step %d (%s): %w", i+1, st.Name, err)
@@ -119,7 +123,7 @@ func (sc *Scenario) Run(s *sender, opt runOptions) error {
 // Resolve sends a resolve for the dedup_key of every alert step. It sends the
 // whole rendered payload, not just the key, so the global orchestration's
 // dynamic routing (custom_details.service) delivers it to the same service.
-func (sc *Scenario) Resolve(s *sender) error {
+func (sc *Scenario) Resolve(s *sender, runID string) error {
 	for _, st := range sc.Steps {
 		if st.Type != "alert" {
 			continue
@@ -133,7 +137,9 @@ func (sc *Scenario) Resolve(s *sender) error {
 			fmt.Printf("skip %s: no dedup_key in payload\n", st.Name)
 			continue
 		}
-		fmt.Printf("resolve %s (service %s)\n", key, routedTo(body))
+		key = runKey(key, runID)
+		fmt.Printf("    %s (%s)\n", key, routedTo(body))
+		body["dedup_key"] = key
 		body["event_action"] = "resolve"
 		if err := s.send("alert", body); err != nil {
 			return err

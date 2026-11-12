@@ -45,7 +45,7 @@ You need Go, Terraform, and (for the cluster) Docker, kind and kubectl. `./trigg
 ./trigger
 ```
 
-That's it. A full-screen menu opens (arrow keys or numbers, Enter to run, q to quit). It shows what's set up, marks the next step with ★, and covers everything:
+That's it. A full-screen menu opens with two pages: **SETUP** (do once) and **DEMO** (use on stage). Switch with ← →. Once setup is done it opens straight on DEMO. ★ marks the next step. It covers everything:
 settings (region US/EU, API key, your email, each checked against PagerDuty and saved to `.env`),
 creating the PagerDuty objects, the local cluster, running, resolving, resetting between demos, and teardown.
 Anything that sends alerts or deletes something asks first.
