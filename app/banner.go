@@ -7,37 +7,38 @@ import (
 	"time"
 )
 
-// logoRows is the PagerDuty-style mark: a green tile with a white "p".
-// '#' is the white glyph, '.' is the green tile. Terminal cells are about
-// twice as tall as wide, so 18×9 reads as a square.
+// logoRows is the PagerDuty-style "P": a green bowl, a cut, then the stem
+// on its own. '#' is a green cell. Terminal cells are about twice as tall
+// as wide, so 16×9 keeps the proportions.
 var logoRows = []string{
-	"..................",
-	"....#######.......",
-	"....##.....##.....",
-	"....##......##....",
-	"....##.....##.....",
-	"....#######.......",
-	"....##............",
-	"....##............",
-	"..................",
+	"###########     ",
+	"##############  ",
+	"####      ####  ",
+	"####      ####  ",
+	"##############  ",
+	"###########     ",
+	"                ",
+	"####            ",
+	"####            ",
 }
 
 // pulseTrace is the heartbeat drawn beside the logo: a pager going off.
 var pulseTrace = []rune("──────────╱╲──╱╲╱╲╱───────────")
 
-const pulseRow = 6 // which logo row the trace sits beside
+const pulseRow = 7 // which logo row the trace sits beside (next to the stem)
 
-var tileBG, glyphFG = "\033[48;5;35m", "\033[97m"
+// logoFG is PagerDuty green; empty means no colour (NO_COLOR).
+var logoFG = "\033[38;5;35m"
 
 func init() {
 	if ct := os.Getenv("COLORTERM"); ct == "truecolor" || ct == "24bit" {
-		tileBG = "\033[48;2;6;172;56m" // PagerDuty green
-		cAccent = "\033[38;2;6;172;56m"
-	} else if cAccent != "" {
-		cAccent = "\033[38;5;35m"
+		logoFG = "\033[38;2;6;172;56m"
 	}
 	if os.Getenv("NO_COLOR") != "" {
-		tileBG, glyphFG = "", ""
+		logoFG = ""
+	}
+	if cAccent != "" {
+		cAccent = logoFG
 	}
 }
 
@@ -50,24 +51,24 @@ var settled = headerFrame{len(logoRows), len(pulseTrace)}
 // header renders the logo with the title beside it. Every line ends with
 // erase-to-end-of-line, so frames can be redrawn in place without flicker.
 func header(f headerFrame) string {
-	if termWidth() < 60 || tileBG == "" {
+	if termWidth() < 60 || logoFG == "" {
 		return "\n " + cAccent + cBold + "R E I N V E N T" + cReset + "\033[K\n" +
 			" " + cDim + "claims-reconciliation · a PagerDuty demo · " + version + cReset + "\033[K\n\n"
 	}
 	side := map[int]string{
-		2: cAccent + cBold + "R E I N V E N T" + cReset,
-		3: cDim + "claims-reconciliation · memory leak" + cReset,
-		4: cDim + "a PagerDuty demo · " + version + cReset,
+		1: cAccent + cBold + "R E I N V E N T" + cReset,
+		2: cDim + "claims-reconciliation · memory leak" + cReset,
+		3: cDim + "a PagerDuty demo · " + version + cReset,
 	}
 	var b strings.Builder
 	b.WriteString("\n")
 	for i, row := range logoRows {
 		b.WriteString("  ")
 		if i < f.rows {
-			b.WriteString(tileBG)
+			b.WriteString(logoFG)
 			for _, ch := range row {
 				if ch == '#' {
-					b.WriteString(glyphFG + "█")
+					b.WriteString("█")
 				} else {
 					b.WriteString(" ")
 				}
@@ -98,11 +99,12 @@ func pulse(n int) string {
 	return cAccent + string(pulseTrace[:n]) + cBold + "●" + cReset
 }
 
-// animateHeader plays once when the menu opens: the tile builds row by row,
+// animateHeader plays once when the menu opens: the P builds row by row (with a
+// beat at the cut),
 // then the heartbeat sweeps across. It only redraws the header in place.
 // Skipped for NO_COLOR, REINVENT_NO_ANIMATION and narrow windows.
 func animateHeader() {
-	if tileBG == "" || os.Getenv("REINVENT_NO_ANIMATION") != "" || termWidth() < 60 {
+	if logoFG == "" || os.Getenv("REINVENT_NO_ANIMATION") != "" || termWidth() < 60 {
 		return
 	}
 	frame := func(f headerFrame, d time.Duration) {
@@ -110,7 +112,11 @@ func animateHeader() {
 		time.Sleep(d)
 	}
 	for r := 1; r <= len(logoRows); r++ {
-		frame(headerFrame{r, 0}, 40*time.Millisecond)
+		d := 40 * time.Millisecond
+		if r == 6 {
+			d = 160 * time.Millisecond // beat before the stem drops in below the cut
+		}
+		frame(headerFrame{r, 0}, d)
 	}
 	for p := 1; p <= len(pulseTrace); p++ {
 		frame(headerFrame{len(logoRows), p}, 28*time.Millisecond)
