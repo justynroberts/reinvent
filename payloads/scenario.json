@@ -1,0 +1,30 @@
+{
+  "name": "claims-reconciliation memory leak",
+  "description": "A library upgrade in claims-reconciliation v2.14.0 leaks memory. The hung pod starves its Kubernetes node, evicting patient-portal and scheduling, and claims submissions back up.",
+  "vars": {
+    "cluster": "reinvent-kind",
+    "namespace": "healthcare",
+    "node": "reinvent-control-plane",
+    "deployment": "claims-reconciliation",
+    "claims_service": "claims-reconciliation",
+    "scheduling_service": "scheduling",
+    "business_service": "patient-portal",
+    "container": "app",
+    "image_repo": "registry.internal/claims/claims-reconciliation",
+    "image_tag": "v2.14.0",
+    "previous_tag": "v2.13.4",
+    "library": "x12-claims-parser",
+    "library_from": "4.2.1",
+    "library_to": "5.0.0",
+    "deployed_ago": "47m",
+    "repo_url": "https://github.com/example-health/claims-reconciliation"
+  },
+  "steps": [
+    { "name": "Change event: v2.14.0 rollout (library upgrade)", "type": "change", "payload": "change-event.json", "wait_after": "8s" },
+    { "name": "Noise: probe latency (info, suppressed by EO)",    "type": "alert",  "payload": "alerts/00-probe-noise.json", "wait_after": "5s" },
+    { "name": "claims-reconciliation memory leak, worker hung",    "type": "alert",  "payload": "alerts/01-claims-memory-leak.json", "wait_after": "15s" },
+    { "name": "Node MemoryPressure, kubelet evicting",             "type": "alert",  "payload": "alerts/02-node-memory-pressure.json", "wait_after": "15s" },
+    { "name": "scheduling pods evicted (routes to scheduling)",          "type": "alert",  "payload": "alerts/03-colocated-pods-evicted.json", "wait_after": "15s" },
+    { "name": "Claims submission queue backing up",                "type": "alert",  "payload": "alerts/04-claims-queue-backlog.json", "wait_after": "0s" }
+  ]
+}

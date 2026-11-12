@@ -1,0 +1,31 @@
+# For the "Pod Created Adhoc" variant of Kubernetes Remediation, where
+# claims-reconciliation runs as a bare Pod (no Deployment to recreate it).
+# The workflow deletes the leaking pod, waits, then creates this spec, which
+# mimics Kubernetes spinning up a replacement - now with a memory limit.
+#
+# To run the adhoc variant instead of the Deployment:
+#   kubectl -n healthcare scale deployment/claims-reconciliation --replicas=0
+#   kubectl apply -f k8s/claims-reconciliation-adhoc-pod.yaml
+# (LEAK_CAP_MB 300 sits under the 512Mi limit, so the pod is stable either way.)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: claims-reconciliation
+  namespace: healthcare
+  labels: { app: claims-reconciliation, version: v2.14.0 }
+spec:
+  terminationGracePeriodSeconds: 5
+  containers:
+    - name: app
+      image: python:3.12-alpine
+      command: ["python", "-u", "/app/app.py"]
+      env:
+        - { name: LEAK_CAP_MB, value: "300" }
+      resources:
+        requests: { memory: 256Mi }
+        limits: { memory: 512Mi }
+      volumeMounts:
+        - { name: app, mountPath: /app }
+  volumes:
+    - name: app
+      configMap: { name: claims-reconciliation-app }

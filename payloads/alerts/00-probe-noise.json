@@ -1,0 +1,19 @@
+{
+  "event_action": "trigger",
+  "dedup_key": "reinvent/{{.Vars.namespace}}/{{.Vars.deployment}}/probe-latency",
+  "payload": {
+    "summary": "Kubernetes: liveness probe latency 1.2s on {{.Vars.deployment}} (threshold 1s)",
+    "source": "{{.Vars.node}}",
+    "severity": "info",
+    "timestamp": "{{now}}",
+    "component": "{{.Vars.deployment}}",
+    "group": "{{.Vars.namespace}}",
+    "class": "probe_latency",
+    "custom_details": {
+      "service": "{{.Vars.claims_service}}",
+      "platform": "kubernetes",
+      "cluster": "{{.Vars.cluster}}",
+      "note": "Info-level noise. The Event Orchestration suppresses it, so it never pages anyone."
+    }
+  }
+}

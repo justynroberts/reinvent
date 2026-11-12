@@ -1,0 +1,11 @@
+bin/
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
+terraform/crash.log
+.DS_Store
+.env
+dist/
+terraform/*.tfplan
+terraform/.terraform.tfstate.lock.info

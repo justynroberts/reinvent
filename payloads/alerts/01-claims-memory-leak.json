@@ -1,0 +1,37 @@
+{
+  "event_action": "trigger",
+  "dedup_key": "reinvent/{{.Vars.namespace}}/{{.Vars.deployment}}/memory-leak",
+  "client": "Prometheus Alertmanager ({{.Vars.cluster}})",
+  "payload": {
+    "summary": "Kubernetes: {{.Vars.deployment}} pod memory at 96% of node allocatable and worker hung (no heartbeat 4m) on {{.Vars.node}}",
+    "source": "{{.Vars.node}}",
+    "severity": "critical",
+    "timestamp": "{{now}}",
+    "component": "{{.Vars.deployment}}",
+    "group": "{{.Vars.namespace}}",
+    "class": "memory_leak",
+    "custom_details": {
+      "service": "{{.Vars.claims_service}}",
+      "platform": "kubernetes",
+      "cluster": "{{.Vars.cluster}}",
+      "namespace": "{{.Vars.namespace}}",
+      "node": "{{.Vars.node}}",
+      "deployment": "{{.Vars.deployment}}",
+      "pod_selector": "app={{.Vars.deployment}}",
+      "container": "{{.Vars.container}}",
+      "image": "{{.Vars.image_repo}}:{{.Vars.image_tag}}",
+      "container_memory_working_set": "7.4Gi",
+      "node_allocatable_memory": "7.7Gi",
+      "memory_limit": "none (resources.limits.memory not set)",
+      "memory_trend": "linear growth of ~150Mi/min since rollout of {{.Vars.image_tag}} {{.Vars.deployed_ago}} ago; flat at ~600Mi on {{.Vars.previous_tag}}",
+      "process_state": "reconciliation worker thread blocked; heartbeat last seen 4m ago; pod still Running and Ready=False",
+      "restarts": 0,
+      "suspected_change": "{{.Vars.library}} {{.Vars.library_from}} → {{.Vars.library_to}} shipped in {{.Vars.image_tag}}",
+      "co_located_workloads": "patient-portal, scheduling (same node)",
+      "alertname": "KubePodMemoryNearNodeAllocatable"
+    }
+  },
+  "links": [
+    { "href": "https://grafana.example-health.internal/d/k8s-pod?var-pod={{.Vars.deployment}}", "text": "Grafana: pod memory" }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "payload": {
+    "summary": "Deployed {{.Vars.deployment}} {{.Vars.image_tag}} to {{.Vars.cluster}}/{{.Vars.namespace}}: upgrades {{.Vars.library}} {{.Vars.library_from}} → {{.Vars.library_to}}",
+    "timestamp": "{{ago .Vars.deployed_ago}}",
+    "source": "argocd/{{.Vars.cluster}}",
+    "custom_details": {
+      "service": "{{.Vars.claims_service}}",
+      "platform": "kubernetes",
+      "cluster": "{{.Vars.cluster}}",
+      "namespace": "{{.Vars.namespace}}",
+      "deployment": "{{.Vars.deployment}}",
+      "image": "{{.Vars.image_repo}}:{{.Vars.image_tag}}",
+      "previous_image": "{{.Vars.image_repo}}:{{.Vars.previous_tag}}",
+      "change_type": "dependency upgrade",
+      "dependency_changes": "{{.Vars.library}} {{.Vars.library_from}} → {{.Vars.library_to}} (major). Release notes: streaming segment parser now pools buffers per payer connection.",
+      "resources_changed": "none - container still has no memory limit",
+      "deployed_by": "ci-bot (merge of PR #482 'bump x12-claims-parser to 5.x')",
+      "rollout": "RollingUpdate, 1/1 replicas updated"
+    }
+  },
+  "links": [
+    { "href": "{{.Vars.repo_url}}/pull/482", "text": "PR #482: bump {{.Vars.library}} to {{.Vars.library_to}}" },
+    { "href": "{{.Vars.repo_url}}/releases/tag/{{.Vars.image_tag}}", "text": "Release {{.Vars.image_tag}}" }
+  ]
+}

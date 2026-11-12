@@ -1,0 +1,25 @@
+{
+  "event_action": "trigger",
+  "dedup_key": "reinvent/{{.Vars.namespace}}/claims-queue-backlog",
+  "client": "Prometheus Alertmanager ({{.Vars.cluster}})",
+  "payload": {
+    "summary": "Kubernetes: claims submission queue depth 4,812 (threshold 500), oldest message 11m, consumer {{.Vars.deployment}} not acking",
+    "source": "{{.Vars.node}}",
+    "severity": "warning",
+    "timestamp": "{{now}}",
+    "component": "claims-submission-queue",
+    "group": "{{.Vars.namespace}}",
+    "class": "queue_backlog",
+    "custom_details": {
+      "service": "{{.Vars.claims_service}}",
+      "platform": "kubernetes",
+      "cluster": "{{.Vars.cluster}}",
+      "queue": "claims.submissions.837",
+      "depth": 4812,
+      "oldest_message_age": "11m",
+      "consumer": "{{.Vars.namespace}}/{{.Vars.deployment}} (0 acks in 4m)",
+      "compliance": "Claims must be acknowledged to payers within the contractual window; HIPAA/X12 999 acknowledgements are now delayed. Compliance exposure if the backlog exceeds 60m.",
+      "alertname": "ClaimsQueueBacklog"
+    }
+  }
+}

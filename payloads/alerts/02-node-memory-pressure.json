@@ -1,0 +1,25 @@
+{
+  "event_action": "trigger",
+  "dedup_key": "reinvent/{{.Vars.node}}/memory-pressure",
+  "client": "Prometheus Alertmanager ({{.Vars.cluster}})",
+  "payload": {
+    "summary": "Kubernetes: node {{.Vars.node}} MemoryPressure=True, kubelet evicting pods",
+    "source": "{{.Vars.node}}",
+    "severity": "error",
+    "timestamp": "{{now}}",
+    "component": "kubelet",
+    "group": "{{.Vars.cluster}}",
+    "class": "node_memory_pressure",
+    "custom_details": {
+      "service": "{{.Vars.claims_service}}",
+      "platform": "kubernetes",
+      "cluster": "{{.Vars.cluster}}",
+      "node": "{{.Vars.node}}",
+      "condition": "MemoryPressure=True",
+      "memory_available": "212Mi (eviction threshold 300Mi)",
+      "top_consumer": "{{.Vars.namespace}}/{{.Vars.deployment}} (7.4Gi working set, no limit)",
+      "eviction_policy": "kubelet evicts BestEffort/Burstable pods first; {{.Vars.deployment}} survives because it has no request/limit to exceed",
+      "alertname": "KubeNodeMemoryPressure"
+    }
+  }
+}

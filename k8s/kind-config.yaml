@@ -1,0 +1,7 @@
+# Single-node kind cluster: every workload shares one node, which is the story.
+# kind create cluster --config k8s/kind-config.yaml   -> node "reinvent-control-plane"
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: reinvent
+nodes:
+  - role: control-plane

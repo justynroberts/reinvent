@@ -1,0 +1,69 @@
+# Toolbox for the "Pod Command to update memory limit" step.
+#
+# The runner's default ClusterRole (see the runner KB) can exec into pods but
+# cannot patch Deployments. Rather than widening the runner, the workflow execs
+# into this toolbox, whose own ServiceAccount may patch Deployments in
+# "healthcare" only.
+#
+# Command the workflow runs inside it (container "worker"):
+#   kubectl -n healthcare set resources deployment/claims-reconciliation -c app \
+#     --requests=memory=256Mi --limits=memory=512Mi
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: claims-toolbox
+  namespace: healthcare
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: claims-toolbox
+  namespace: healthcare
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, list, patch]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claims-toolbox
+  namespace: healthcare
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: claims-toolbox
+subjects:
+  - kind: ServiceAccount
+    name: claims-toolbox
+    namespace: healthcare
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: claims-toolbox
+  namespace: healthcare
+  labels: { app: claims-toolbox }
+spec:
+  serviceAccountName: claims-toolbox
+  automountServiceAccountToken: true
+  terminationGracePeriodSeconds: 5
+  containers:
+    - name: worker
+      image: alpine/k8s:1.33.4
+      command: ["/bin/sh", "-c"]
+      args: ["exec tail -f /dev/null"]
+      env:
+        - { name: HOME, value: /tmp }
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 65532
+        capabilities: { drop: ["ALL"] }
+        seccompProfile: { type: RuntimeDefault }
+      resources:
+        requests: { cpu: 50m, memory: 64Mi }
+        limits: { cpu: 500m, memory: 256Mi }

@@ -1,0 +1,14 @@
+# Optional. Copy to terraform.tfvars (gitignored) only to change the settings below.
+# responder_email is asked for by `make plan` / `create` and passed as -var, which wins over this file.
+# responder_email = "you@example.com"
+
+# team_id = "PXXXXXX"
+
+# "intelligent" tells the story; "content_based" guarantees one incident on a fresh service.
+# alert_grouping_type = "content_based"
+
+# Set false if priorities are not enabled on the sandbox.
+# enable_priority = true
+
+# Set false to build all four workflows by hand from templates.
+# manage_incident_workflows = true
