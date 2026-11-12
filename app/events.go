@@ -13,19 +13,19 @@ import (
 
 // sender posts events to the PagerDuty Events API v2, or prints them in dry-run mode.
 type sender struct {
-	alertKey  string // global Event Orchestration: routes on custom_details.service
-	changeKey string // claims-reconciliation service integration
-	dryRun    bool
-	base      string
-	client    *http.Client
+	alertKey   string            // global Event Orchestration: routes on custom_details.service
+	changeKeys map[string]string // service name → change integration key ("*" = any)
+	dryRun     bool
+	base       string
+	client     *http.Client
 }
 
-func newSender(alertKey, changeKey string, dryRun bool) *sender {
+func newSender(alertKey string, changeKeys map[string]string, dryRun bool) *sender {
 	base := "https://events.pagerduty.com"
 	if strings.EqualFold(os.Getenv("PAGERDUTY_SERVICE_REGION"), "eu") {
 		base = "https://events.eu.pagerduty.com"
 	}
-	return &sender{alertKey: alertKey, changeKey: changeKey, dryRun: dryRun, base: base, client: &http.Client{Timeout: 15 * time.Second}}
+	return &sender{alertKey: alertKey, changeKeys: changeKeys, dryRun: dryRun, base: base, client: &http.Client{Timeout: 15 * time.Second}}
 }
 
 // send injects the routing key and posts body to the alert or change endpoint.
@@ -33,7 +33,15 @@ func (s *sender) send(kind string, body map[string]any) error {
 	body["routing_key"] = s.alertKey
 	path := "/v2/enqueue"
 	if kind == "change" {
-		body["routing_key"] = s.changeKey
+		svc := routedTo(body)
+		k, ok := s.changeKeys[svc]
+		if !ok {
+			k, ok = s.changeKeys["*"]
+		}
+		if !ok {
+			return fmt.Errorf("no change-event key for service %q. Choose \"Create / update PagerDuty objects\" (3), then try again", svc)
+		}
+		body["routing_key"] = k
 		path = "/v2/change/enqueue"
 	}
 
@@ -50,7 +58,7 @@ func (s *sender) send(kind string, body map[string]any) error {
 		_ = enc.Encode(shown)
 		fmt.Printf("    POST %s%s\n    %s", s.base, path, out.String())
 		if kind == "change" {
-			fmt.Println("    → sent directly to the claims-reconciliation service integration")
+			fmt.Printf("    → sent directly to the %q service's change integration\n", routedTo(body))
 		} else if svc := routedTo(body); svc != "" {
 			fmt.Printf("    → Reinvent Patient orchestration routes this to service %q\n", svc)
 		}

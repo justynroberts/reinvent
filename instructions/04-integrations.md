@@ -20,7 +20,7 @@ All OAuth or UI-only. None of it can be scripted.
 
 ## Change events
 
-Nothing to configure. Alerts go to the Reinvent Patient orchestration's routing key, but change events go to claims-reconciliation's own integration key at `/v2/change/enqueue`. `trigger run` sends one first, with its timestamp backdated 47 minutes (`vars.deployed_ago`), so the incident's *Recent changes* shows the `v2.14.0` rollout.
+Nothing to configure. Alerts go to the Reinvent Patient orchestration's routing key, but change events go to each service's own change integration at `/v2/change/enqueue` (claims-reconciliation and scheduling each get one). `trigger run` sends one first, with its timestamp backdated 47 minutes (`vars.deployed_ago`), so the incident's *Recent changes* shows the `v2.14.0` rollout.
 
 Check: after a run, Service → `claims-reconciliation` → **Recent Changes** lists "Deployed claims-reconciliation v2.14.0 …".
 

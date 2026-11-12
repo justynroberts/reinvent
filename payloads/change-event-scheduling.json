@@ -1,0 +1,24 @@
+{
+  "payload": {
+    "summary": "Deployed {{.Vars.scheduling_service}} {{.Vars.scheduling_tag}} to {{.Vars.cluster}}/{{.Vars.namespace}}: booking slot cache TTL 30s → 60s (config only)",
+    "timestamp": "{{ago .Vars.scheduling_deployed_ago}}",
+    "source": "argocd/{{.Vars.cluster}}",
+    "custom_details": {
+      "service": "{{.Vars.scheduling_service}}",
+      "platform": "kubernetes",
+      "cluster": "{{.Vars.cluster}}",
+      "namespace": "{{.Vars.namespace}}",
+      "deployment": "{{.Vars.scheduling_service}}",
+      "image": "registry.internal/clinic/scheduling:{{.Vars.scheduling_tag}}",
+      "previous_image": "registry.internal/clinic/scheduling:{{.Vars.scheduling_previous_tag}}",
+      "change_type": "configuration",
+      "config_changes": "BOOKING_SLOT_CACHE_TTL 30s → 60s. No dependency or resource changes.",
+      "resources_changed": "none - memory limit unchanged at 64Mi",
+      "deployed_by": "ci-bot (merge of PR #219 'longer slot cache to cut DB reads')",
+      "rollout": "RollingUpdate, 1/1 replicas updated, healthy for {{.Vars.scheduling_deployed_ago}} before the incident"
+    }
+  },
+  "links": [
+    { "href": "https://github.com/example-health/scheduling/pull/219", "text": "PR #219: longer slot cache TTL" }
+  ]
+}

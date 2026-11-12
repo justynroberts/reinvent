@@ -14,7 +14,11 @@ func terraformOutput(dir, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cmd := exec.Command(tf, "-chdir="+dir, "output", "-raw", name)
+	format := "-raw"
+	if strings.HasSuffix(name, "_keys") { // map outputs
+		format = "-json"
+	}
+	cmd := exec.Command(tf, "-chdir="+dir, "output", format, name)
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("terraform output %s: %s", name, strings.TrimSpace(errb.String()))

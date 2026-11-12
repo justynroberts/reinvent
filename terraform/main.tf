@@ -67,11 +67,14 @@ resource "pagerduty_service" "tech" {
   }
 }
 
-# Change events go straight to claims-reconciliation through this integration
-# (/v2/change/enqueue). Alerts use the global orchestration's routing key.
+# Change events go straight to each service through its own integration
+# (/v2/change/enqueue). The app picks the key by the change event's
+# custom_details.service. Alerts use the global orchestration's routing key.
 resource "pagerduty_service_integration" "changes" {
+  for_each = pagerduty_service.tech
+
   name    = "CI/CD change events (Events API v2)"
-  service = pagerduty_service.tech["claims"].id
+  service = each.value.id
   type    = "events_api_v2_inbound_integration"
 }
 
@@ -122,8 +125,8 @@ moved {
 }
 
 moved {
-  from = pagerduty_service_integration.events
-  to   = pagerduty_service_integration.changes
+  from = pagerduty_service_integration.changes
+  to   = pagerduty_service_integration.changes["claims"]
 }
 
 moved {

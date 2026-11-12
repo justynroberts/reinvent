@@ -1,0 +1,28 @@
+{
+  "event_action": "trigger",
+  "dedup_key": "reinvent/{{.Vars.namespace}}/scheduling-latency",
+  "client": "Prometheus Alertmanager ({{.Vars.cluster}})",
+  "payload": {
+    "summary": "Kubernetes: {{.Vars.scheduling_service}} p95 latency 2.4s (SLO 500ms), readiness probe failing on {{.Vars.node}}",
+    "source": "{{.Vars.node}}",
+    "severity": "warning",
+    "timestamp": "{{now}}",
+    "component": "{{.Vars.scheduling_service}}",
+    "group": "{{.Vars.namespace}}",
+    "class": "latency",
+    "custom_details": {
+      "service": "{{.Vars.scheduling_service}}",
+      "platform": "kubernetes",
+      "cluster": "{{.Vars.cluster}}",
+      "namespace": "{{.Vars.namespace}}",
+      "node": "{{.Vars.node}}",
+      "deployment": "{{.Vars.scheduling_service}}",
+      "p95_latency": "2.4s (SLO 500ms, normal 120ms)",
+      "readiness_probe": "3 of last 5 failed (timeout 1s)",
+      "container_memory": "41Mi of 64Mi limit (normal)",
+      "cpu_throttling": "28% of periods throttled; node CPU steal rising as memory reclaim kicks in",
+      "note": "Scheduling's own memory is normal. The node is under memory pressure.",
+      "alertname": "SchedulingLatencySLOBreach"
+    }
+  }
+}

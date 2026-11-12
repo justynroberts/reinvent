@@ -34,9 +34,11 @@ Each beat lists what to say, what's on screen, and the setup it depends on.
 
 ### 1. A change nobody worried about
 
-- **Trigger:** `./trigger`, then **RUN THE DEMO**. The first event is a **change event** with a timestamp 47 minutes in the past: *Deployed claims-reconciliation v2.14.0 … x12-claims-parser 4.2.1 → 5.0.0*.
+- **Trigger:** `./trigger`, then **RUN THE DEMO**. Two **change events** arrive first, both backdated:
+  - `scheduling` **v3.8.2**, 3 hours ago: a config-only cache tweak. It's the red herring.
+  - `claims-reconciliation` **v2.14.0**, 47 minutes ago: *x12-claims-parser 4.2.1 → 5.0.0*.
 - **Say:** "CI shipped a dependency bump. Green build, no alerts. PagerDuty records it anyway."
-- *Depends on:* change events on claims-reconciliation (sent to its own integration key).
+- *Depends on:* a change-event integration on each technical service (Terraform).
 
 ### 2. Noise is dropped, signal escalates
 
@@ -44,7 +46,8 @@ Each beat lists what to say, what's on screen, and the setup it depends on.
 - Then the real alerts arrive at one front door, the **Reinvent Patient** orchestration, all mentioning **Kubernetes**. **Dynamic routing** reads each alert's `service` field: the memory leak, node `MemoryPressure` and claims queue backlog go to `claims-reconciliation`; the evicted pods go to `scheduling`.
 - Each service's EO rule matches *Kubernetes*, raises it to **critical**, and adds an annotation that points at the change and the runbook. No priority yet: that's a human call (beat 5).
 - **Cross-service Intelligent Alert Grouping** (one grouping setting covering both services, comparing the alert `source`, which is the node) folds alerts from `claims-reconciliation` **and** `scheduling` into **one incident**.
-- **Say:** "One orchestration, no routing table: each alert says which service it belongs to. Four alerts on two services, one incident, because PagerDuty saw they share a node. Scheduling looks broken, but it's a victim."
+- Both services light up. `claims-reconciliation` gets the memory leak, node pressure and queue backlog. `scheduling` gets latency with readiness failing, then the eviction, then 503s at the ingress.
+- **Say:** "One orchestration, no routing table: each alert says which service it belongs to. Seven alerts on two services, one incident, because PagerDuty saw they share a node. Scheduling looks like the broken one, and it even shipped a change today, but it's a victim."
 - *Depends on:* global orchestration with dynamic routing, service EO rules, cross-service alert grouping (intelligent grouping learns, so the first run on a new account may not group; `alert_grouping_type = "content_based"` makes it deterministic) ([02](../instructions/02-terraform.md)).
 
 ### 3. Business impact is visible immediately
@@ -58,7 +61,7 @@ Each beat lists what to say, what's on screen, and the setup it depends on.
 - The escalation policy pages **Paige at level 1**. Two conditional workflows fire on creation:
   - **Paige Virtual Responder - Dedicated Slack Channel** creates the incident channel. Paige posts findings and next steps there.
   - **Kubernetes diagnostics** lists the claims-reconciliation pods through the Agent Connector and sends them to Paige as an incident note.
-- **Paige's finding** comes from the change event, the alert custom details and the runbook: memory grew linearly from the `v2.14.0` rollout, there is no memory limit, the evictions are collateral, and the root cause is the `x12-claims-parser` upgrade. Recommended fix: restart the pod and apply a memory limit.
+- **Paige's finding** comes from the change event, the alert custom details and the runbook: memory grew linearly from the `v2.14.0` rollout, there is no memory limit, the evictions are collateral, and the root cause is the `x12-claims-parser` upgrade. She also rules out the scheduling change: it was config-only, healthy for 3 hours, and scheduling's own memory is normal. Recommended fix: restart the pod and apply a memory limit.
 - **Say:** "Before a human has opened a laptop, Paige has a channel, the live pod list, and a root cause tied to a specific change."
 - *Depends on:* Slack and Paige scopes, the Agent Connector, the runner, the runbook upload ([03](../instructions/03-kubernetes-and-runner.md), [04](../instructions/04-integrations.md)).
 

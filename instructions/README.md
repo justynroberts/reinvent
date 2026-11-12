@@ -23,7 +23,7 @@ Work through these in order. The whole setup takes about 90 minutes the first ti
 | Service dependencies (patient-portal → both technical services) | 🟢 | Terraform `pagerduty_service_dependency` |
 | **Reinvent Patient** global orchestration, dynamic routing on `custom_details.service` | 🟢 | Terraform `pagerduty_event_orchestration` + `_router`. Alerts use its routing key (`terraform output routing_key`). |
 | Runbook link on every alert (`custom_details.runbook.github` → `runbook/<service>.md` on GitHub) | 🟢 | Terraform `pagerduty_event_orchestration_global` rule |
-| Change events on claims-reconciliation | 🟢 | Service integration key (`terraform output change_routing_key`), `/v2/change/enqueue`, sent by `./trigger run` |
+| Change events on both technical services | 🟢 | One integration per service (`terraform output change_routing_keys`). The app picks the key by the change event's `custom_details.service`. |
 | Alert payloads (mention Kubernetes, root-cause context) | 🟢 | `payloads/`, rendered and sent by `trigger run` |
 | Cross-service Intelligent Alert Grouping (both services, compares `source` = node) | 🟢 | Terraform `pagerduty_alert_grouping_setting` with both services and `iag_fields = ["source"]`. IAG learns, so a fresh account may not group the first run; `alert_grouping_type = "content_based"` makes it deterministic. |
 | Service orchestration rule on both technical services (Kubernetes → critical + annotation; info suppressed; no priority) | 🟢 | Terraform `pagerduty_event_orchestration_service` |

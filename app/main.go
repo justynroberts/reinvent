@@ -6,6 +6,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -36,7 +37,7 @@ environment (also read from <root>/.env; the real environment wins):
   plan/create/destroy ask for these in a terminal, confirm saved values, check
   them against PagerDuty, and save them to .env.
   PD_ROUTING_KEY             overrides the alert routing key (global orchestration)
-  PD_CHANGE_ROUTING_KEY      overrides the change-event routing key (claims service)
+  PD_CHANGE_ROUTING_KEY      overrides the change-event routing key (every service)
 
 run "trigger <command> -h" for command flags.
 `
@@ -151,16 +152,21 @@ func (c *common) scenarioPath() string {
 
 func (c *common) tfDir() string { return filepath.Join(c.root, "terraform") }
 
-// changeKey returns the change-event routing key: env, then terraform output.
-func (c *common) changeKey() (string, error) {
+// changeKeys returns the change-event routing key per service name, from
+// terraform output. PD_CHANGE_ROUTING_KEY, if set, is used for every service.
+func (c *common) changeKeys() (map[string]string, error) {
 	if k := os.Getenv("PD_CHANGE_ROUTING_KEY"); k != "" {
-		return k, nil
+		return map[string]string{"*": k}, nil
 	}
-	k, err := terraformOutput(c.tfDir(), "change_routing_key")
+	raw, err := terraformOutput(c.tfDir(), "change_routing_keys")
 	if err != nil {
-		return "", c.notReady(err)
+		return nil, c.notReady(err)
 	}
-	return k, nil
+	keys := map[string]string{}
+	if err := json.Unmarshal([]byte(raw), &keys); err != nil {
+		return nil, fmt.Errorf("reading change_routing_keys: %w", err)
+	}
+	return keys, nil
 }
 
 // key returns the alert routing key (global orchestration): flag, then env, then terraform output.
@@ -217,16 +223,16 @@ func cmdRun(args []string) error {
 	if err != nil {
 		return err
 	}
-	key, ckey := "DRY-RUN", "DRY-RUN"
+	key, ckeys := "DRY-RUN", map[string]string{"*": "DRY-RUN"}
 	if !*dry {
 		if key, err = c.key(); err != nil {
 			return err
 		}
-		if ckey, err = c.changeKey(); err != nil {
+		if ckeys, err = c.changeKeys(); err != nil {
 			return err
 		}
 	}
-	return sc.Run(newSender(key, ckey, *dry), runOptions{noWait: *fast, only: *only})
+	return sc.Run(newSender(key, ckeys, *dry), runOptions{noWait: *fast, only: *only})
 }
 
 func cmdResolve(args []string) error {
@@ -248,7 +254,7 @@ func cmdResolve(args []string) error {
 			return err
 		}
 	}
-	return sc.Resolve(newSender(key, "", *dry))
+	return sc.Resolve(newSender(key, nil, *dry))
 }
 
 func cmdDestroy(args []string) error {
@@ -270,7 +276,7 @@ func cmdDestroy(args []string) error {
 			fmt.Fprintln(os.Stderr, "warning: skipping resolve:", err)
 		} else if sc, err := loadScenario(c.scenarioPath()); err != nil {
 			fmt.Fprintln(os.Stderr, "warning: skipping resolve:", err)
-		} else if err := sc.Resolve(newSender(key, "", false)); err != nil {
+		} else if err := sc.Resolve(newSender(key, nil, false)); err != nil {
 			fmt.Fprintln(os.Stderr, "warning: resolve failed, continuing:", err)
 		}
 	}

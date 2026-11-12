@@ -318,7 +318,7 @@ func readStatus(root string) status {
 
 // requiredOutputs are the Terraform outputs this version of the app reads.
 // A state without them was applied by an older version and needs `create`.
-var requiredOutputs = []string{"routing_key", "change_routing_key"}
+var requiredOutputs = []string{"routing_key", "change_routing_keys"}
 
 func tfState(path string) (created, outdated bool) {
 	raw, err := os.ReadFile(path)

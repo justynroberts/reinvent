@@ -4,9 +4,9 @@ output "routing_key" {
   sensitive   = true
 }
 
-output "change_routing_key" {
-  description = "claims-reconciliation Events API v2 integration key, used for change events (/v2/change/enqueue). Read by the trigger app."
-  value       = pagerduty_service_integration.changes.integration_key
+output "change_routing_keys" {
+  description = "Change-event integration key per technical service name (/v2/change/enqueue). The app picks one by the change event's custom_details.service."
+  value       = { for k, i in pagerduty_service_integration.changes : pagerduty_service.tech[k].name => i.integration_key }
   sensitive   = true
 }
 

@@ -42,6 +42,9 @@ func TestPayloadsRender(t *testing.T) {
 		switch st.Type {
 		case "change":
 			changes++
+			if svc := routedTo(body); !services[svc] {
+				t.Errorf("%s: change event custom_details.service %q must be a technical service %v (it picks the change integration key)", st.Name, svc, services)
+			}
 		case "alert":
 			if a, _ := body["event_action"].(string); a != "trigger" {
 				t.Errorf("%s: event_action must be trigger", st.Name)
