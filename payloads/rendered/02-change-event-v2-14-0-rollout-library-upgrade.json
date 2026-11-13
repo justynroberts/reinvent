@@ -26,7 +26,7 @@
     },
     "source": "argocd/reinvent-kind",
     "summary": "Deployed claims-reconciliation v2.14.0 to reinvent-kind/healthcare: upgrades x12-claims-parser 4.2.1 → 5.0.0",
-    "timestamp": "2026-11-12T13:46:02Z"
+    "timestamp": "2026-11-13T08:09:41Z"
   },
   "routing_key": "YOUR_CLAIMS_RECONCILIATION_CHANGE_KEY"
 }

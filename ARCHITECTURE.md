@@ -8,7 +8,7 @@ Demo kit for a PagerDuty story: a memory leak in `claims-reconciliation` (from a
 
 ## Commands
 
-**The user's entry point is `./trigger`**, a root shell script, and they want to run nothing else. It rebuilds `bin/trigger` from `app/` when Go sources are newer, then execs it. With no args on a TTY it opens a full-screen TUI (`app/menu.go`): a PagerDuty-style mark: green tile, white "P" with the cut between bowl and stem, titled "Patient portal outage" (not "Reinvent") (`app/banner.go`; it builds row by row with a beat at the cut, and a heartbeat trace sweeps once on open, then stays static; skipped for `NO_COLOR`, `REINVENT_NO_ANIMATION=1` or windows under 60 columns), status panel (settings, PagerDuty state from `terraform.tfstate`, kind cluster), and a menu split into two pages, **SETUP** (do once) and **DEMO** (use on stage), switched with ← → or Tab. It opens on DEMO when `status.setupDone()` is true (settings saved, objects created, not outdated; the cluster is optional) and switches there automatically when setup completes. ★ marks `status.next(page)`. Items are numbered within each page, and every user-facing message names the page and number ("SETUP → 4"). It's stdlib-only: raw mode goes through `stty`, the terminal is restored on exit and on Ctrl-C, and `NO_COLOR` is honoured. Status shells out to kind/docker, so it refreshes only after an action, not on every keypress. Any new user-facing task belongs in that menu, not in a new script or Make target. The `Makefile` is an optional thin wrapper around `./trigger`.
+**The user's entry point is `./trigger`**, a root shell script, and they want to run nothing else. It rebuilds `bin/trigger` from `app/` when Go sources are newer, then execs it. With no args on a TTY it opens a full-screen TUI (`app/menu.go`): a PagerDuty-style mark: green tile, white "P" with a two-row cut between bowl and stem, the stem on the tile's bottom edge, titled "Patient portal outage" (not "Reinvent") (`app/banner.go`; it builds row by row with a beat at the cut, and a heartbeat trace sweeps once on open, then stays static; skipped for `NO_COLOR`, `REINVENT_NO_ANIMATION=1` or windows under 60 columns), status panel (settings, PagerDuty state from `terraform.tfstate`, open demo runs), and a menu split into two pages, **SETUP** (do once) and **DEMO** (use on stage), switched with ← → or Tab. It opens on DEMO when `status.setupDone()` is true (settings saved, objects created, not outdated) and switches there automatically when setup completes. ★ marks `status.next(page)`. Items are numbered within each page, and every user-facing message names the page and number ("SETUP → 4"). It's stdlib-only: raw mode goes through `stty`, the terminal is restored on exit and on Ctrl-C, and `NO_COLOR` is honoured. Status refreshes after each action, not on every keypress. Any new user-facing task belongs in that menu, not in a new script or Make target. The `Makefile` is an optional thin wrapper around `./trigger`.
 
 ```bash
 make validate          # offline: terraform validate + go vet + go test (renders every payload)
@@ -18,15 +18,15 @@ cd app && go test -run TestPayloadsRender ./...     # one test
 ./trigger plan         # read-only terraform plan (runs the setup questions first)
 ```
 
-`./trigger create`, `run`, `resolve`, `destroy` and `cluster up|reset|down` change a live PagerDuty account or cluster. **Don't run them unless the user asks in that message.** `validate`, `test`, `-dry-run` and `plan` are safe. The app finds the repo root by walking up to `payloads/scenario.json` (override with `-root`, which goes after the subcommand).
+`./trigger create`, `run`, `resolve` and `destroy` change a live PagerDuty account. **Don't run them unless the user asks in that message.** `validate`, `test`, `-dry-run` and `plan` are safe. The app finds the repo root by walking up to `payloads/scenario.json` (override with `-root`, which goes after the subcommand).
 
 ## Distribution
 
 Most users don't have a checkout. They install with `install.sh` (`curl … | sh`), which unpacks the release zip into `~/Applications/Reinvent.app` and opens it. Files fetched by curl aren't quarantined, which is why an unsigned app works this way. **This Mac has no Developer ID or notary profile**, so releases are ad-hoc signed. `scripts/release.sh` signs and notarises automatically if both ever appear.
 
 - **One binary, two modes.** If walking up from the working directory finds `payloads/scenario.json`, the app uses the checkout (dev mode). Otherwise it uses the workspace `~/Library/Application Support/Reinvent`: `.env`, Terraform state and `tools/` live there.
-- **Embedded files:** `assets.go` (root package, which is why `go.mod` is at the repo root) embeds `payloads`, `k8s`, `runbook` and the Terraform files. On a version change they're re-extracted into the workspace (`app/workspace.go`), always for `dev` builds. `.env`, state and tools are never touched. A new file the app needs at run time must be added to the `//go:embed` line.
-- **Tools** (`app/tools.go`): Terraform, kind and kubectl are pinned and downloaded on first use from the publishers, checked against their SHA-256 files, and stored in `<workspace>/tools`. PATH copies win. Docker can't be downloaded; `dockerOutsidePath` finds Docker Desktop off-PATH and puts it on PATH for kind.
+- **Embedded files:** `assets.go` (root package, which is why `go.mod` is at the repo root) embeds `payloads`, `runbook` and the Terraform files. On a version change they're re-extracted into the workspace (`app/workspace.go`), always for `dev` builds. `.env`, state and tools are never touched. A new file the app needs at run time must be added to the `//go:embed` line.
+- **Tools** (`app/tools.go`): Terraform is pinned and downloaded on first use from HashiCorp, checked against its SHA-256 file, and stored in `<workspace>/tools`. A copy on PATH wins.
 - **Finder launch** (`app/launch.go`): with no TTY, running from inside `.app`, it reopens itself with `open -a Terminal`.
 - **Releases:** `scripts/release.sh <ver>` builds a universal binary (`-X main.version`), creates the bundle and zip, then verifies a fresh copy from an empty `HOME` outside the checkout. `--publish` tags and runs `gh release create`; only use it when the user asks in that message. Releases are cut locally, never in CI. `githubRepo` in `app/workspace.go` and `REPO` in `install.sh` must match.
 
@@ -35,7 +35,6 @@ Most users don't have a checkout. They install with `install.sh` (`curl … | sh
 Users are often non-technical. Every change to setup is judged against that:
 - **Before Terraform runs** (`app/preflight.go`): priorities off → `-var=enable_priority=false` with a note. Objects with our names that aren't in local state → stop and list them with links (`ownedObjects`; `TestOwnedObjectsMatchTerraform` keeps it in step with `terraform/*.tf`).
 - **No raw Terraform:** `planAndApply` runs init/plan quietly, prints "Will create / update / DELETE" in plain words, asks y/N (the default is No when anything is deleted), then applies that exact plan file. `tfFailed` maps 401/403/name-taken/network/lock errors to a one-line fix and shows the tail of the output.
-- Docker can be Docker Desktop, Rancher Desktop (`~/.rd/bin`) or OrbStack (`~/.orbstack/bin`).
 
 ## How the pieces connect
 
@@ -63,9 +62,9 @@ Users are often non-technical. Every change to setup is judged against that:
 - Workflow and service names are **exact strings from the brief**. Don't rename them. Exception, by the user's decision: `patient-portal` is the only business service and `scheduling` is a technical service. `story/brief.md` still says two business services; leave the brief as the original.
 - No status page resources exist in the provider; that's manual, by design.
 
-## Kubernetes
+## Kubernetes (not in the app for now)
 
-`./trigger cluster` (`app/cluster.go`) always passes `--context kind-reinvent` (override with `-context`), so it never acts on whatever cluster is current. `cluster down` refuses anything but the kind cluster. Missing tools and a stopped Docker fail with an install or start hint, not a stack trace.
+The user removed every cluster feature from the app (menu, status, `cluster` subcommand, kind/kubectl/Docker checks and downloads; `k8s/` is no longer embedded). The manifests stay in `k8s/`, and instructions/03 sets the cluster up by hand with `kind`/`kubectl`. Git history has the removed `app/cluster.go` (it always passed `--context kind-reinvent`) if it comes back.
 
 The runner (from the PD Automation Runner KB, not in this repo) keeps its read-mostly ClusterRole. The memory-limit patch runs via `pods/exec` into `claims-toolbox`, whose namespace-scoped SA alone may `patch` Deployments. Don't widen the runner's RBAC to remove that hop.
 

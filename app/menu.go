@@ -52,21 +52,18 @@ func cmdMenu() error {
 				_, err := ensureSetup(c.root)
 				return err
 			}},
-			{"2", "Check this Mac is ready", "Checks internet and your PagerDuty settings, downloads Terraform/kind/kubectl if needed, and checks Docker. Changes nothing.", "", false, func() error { return cmdDoctor() }},
+			{"2", "Check this Mac is ready", "Checks internet and your PagerDuty settings, and downloads Terraform if needed. Changes nothing.", "", false, func() error { return cmdDoctor() }},
 			{"3", "Preview PagerDuty changes", "Shows what would be created, updated or deleted in PagerDuty. Changes nothing.", "", false, func() error { return cmdPlan(nil) }},
 			{"4", "Create / update PagerDuty objects", "Creates the services, business service, orchestrations and workflows, showing you the list first. Run it again after installing a new version of Reinvent.", "", false, func() error { return cmdCreate(nil) }},
-			{"5", "Start cluster + workloads (optional)", "Creates the local Kubernetes cluster and the demo workloads. Needs Docker. Only the remediation part of the story uses it.", "", false, func() error { return cmdCluster([]string{"up"}) }},
-			{"6", "Open the setup guide", "The few steps done in the PagerDuty web app (Paige on the escalation policy, Kubernetes workflow steps, Slack, status page).", "", false, func() error { return openURL(guideURL) }},
-			{"7", "Delete PagerDuty objects", "Resolves open demo alerts, then deletes everything Reinvent created in PagerDuty, after showing you the list.", "", false, func() error { return cmdDestroy(nil) }},
-			{"8", "Delete local cluster", "Deletes the Kubernetes cluster and everything in it.", "This deletes the local cluster and everything in it. Sure?", false, func() error { return cmdCluster([]string{"down"}) }},
+			{"5", "Open the setup guide", "The few steps done in the PagerDuty web app (Paige on the escalation policy, Slack, status page).", "", false, func() error { return openURL(guideURL) }},
+			{"6", "Delete PagerDuty objects", "Resolves open demo alerts, then deletes everything Reinvent created in PagerDuty, after showing you the list.", "", false, func() error { return cmdDestroy(nil) }},
 		},
 		pageDemo: {
 			{"1", "RUN THE DEMO", "Closes any previous run, then sends 2 change events and 11 alerts over about 30 seconds. Opens real incidents.", "Send the demo events to PagerDuty now?", true, func() error { return cmdRun(nil) }},
 			{"2", "Resolve the demo", "Resolves every alert from demo runs that are still open. Do this when you've finished presenting.", "", false, func() error { return cmdResolve(nil) }},
-			{"3", "Reset cluster for next demo", "Puts claims-reconciliation back without a memory limit, so the leak happens again. Only if you use the cluster.", "", false, func() error { return cmdCluster([]string{"reset"}) }},
-			{"4", "Preview demo events", "Prints every event RUN THE DEMO would send. Sends nothing.", "", false, func() error { return cmdRun([]string{"-dry-run", "-no-wait"}) }},
-			{"5", "Export payloads (curl/Postman)", "Writes every event as plain JSON with your real routing keys, plus send.sh and resolve.sh, to a \"Reinvent payloads\" folder on your Desktop.", "", false, func() error { return cmdExport([]string{"-keys", "-open"}) }},
-			{"6", "Open the demo script", "The story, beat by beat: what to show and what to say.", "", false, func() error { return openURL(storyURL) }},
+			{"3", "Preview demo events", "Prints every event RUN THE DEMO would send. Sends nothing.", "", false, func() error { return cmdRun([]string{"-dry-run", "-no-wait"}) }},
+			{"4", "Export payloads (curl/Postman)", "Writes every event as plain JSON with your real routing keys, plus send.sh and resolve.sh, to a \"Reinvent payloads\" folder on your Desktop.", "", false, func() error { return cmdExport([]string{"-keys", "-open"}) }},
+			{"5", "Open the demo script", "The story, beat by beat: what to show and what to say.", "", false, func() error { return openURL(storyURL) }},
 		},
 	}
 
@@ -170,7 +167,6 @@ func draw(items []menuItem, sel int, st status, page int, next string, hdr heade
 	default:
 		fmt.Fprintf(&b, "  %-12s %s\n", "PagerDuty", dot(st.created, "objects created", "nothing created yet"))
 	}
-	fmt.Fprintf(&b, "  %-12s %s\n", "Cluster", dot(st.cluster, "kind-"+kindName+" running", "not running (optional)"))
 	demo := cDim + "○ nothing open" + cReset
 	if st.demoOpen {
 		demo = cAccent + "● a demo run is open" + cReset + cDim + " (resolve it when you're done)" + cReset
@@ -194,7 +190,7 @@ func draw(items []menuItem, sel int, st status, page int, next string, hdr heade
 		if it.key == next {
 			hint = cAccent + "★ " + cReset
 		}
-		if page == pageSetup && it.key == "7" {
+		if page == pageSetup && it.key == "6" {
 			b.WriteString("  " + cDim + strings.Repeat("─", 40) + cReset + "\n")
 		}
 		if i == sel {
@@ -327,11 +323,10 @@ type status struct {
 	ready    bool
 	created  bool
 	outdated bool // applied by an older version: outputs this version needs are missing
-	cluster  bool
 	demoOpen bool
 }
 
-// setupDone: everything the demo needs is in place (the cluster is optional).
+// setupDone: everything the demo needs is in place.
 func (st status) setupDone() bool { return st.ready && st.created && !st.outdated }
 
 // next is the suggested item (★) on a page.
@@ -342,8 +337,6 @@ func (st status) next(page int) string {
 			return "1"
 		case !st.created || st.outdated:
 			return "4"
-		case !st.cluster:
-			return "5"
 		}
 		return ""
 	}
@@ -368,7 +361,6 @@ func readStatus(root string) status {
 	}
 	st.settings = fmt.Sprintf("%s · %s · key %s", strings.ToUpper(region), email, mask(tok))
 	st.created, st.outdated = tfState(filepath.Join(root, "terraform", "terraform.tfstate"))
-	st.cluster = kindExists()
 	runs := openRuns(root)
 	st.demoOpen = len(runs) > 0 && !(len(runs) == 1 && runs[0] == "")
 	return st

@@ -2,7 +2,7 @@
 TF := terraform -chdir=terraform
 
 .DEFAULT_GOAL := help
-.PHONY: help build test dry-run plan create run resolve destroy fmt validate kind-up kind-down k8s-up k8s-down k8s-reset
+.PHONY: help build test dry-run plan create run resolve destroy fmt validate
 
 help: ## List targets (or skip make entirely: ./trigger)
 	@grep -hE '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-11s %s\n", $$1, $$2}'
@@ -38,17 +38,3 @@ fmt: ## Format Go and Terraform
 validate: ## Offline checks: terraform validate + go test
 	$(TF) init -backend=false -input=false >/dev/null && $(TF) validate
 	$(MAKE) test
-
-k8s-up: ## Create the kind cluster if needed, apply workloads
-	./trigger cluster up
-
-kind-up: k8s-up
-
-k8s-reset: ## Recreate claims-reconciliation without a memory limit (between demos)
-	./trigger cluster reset
-
-kind-down: ## Delete the kind cluster
-	./trigger cluster down
-
-k8s-down: ## Remove the healthcare namespace only
-	kubectl --context kind-reinvent delete namespace healthcare --ignore-not-found

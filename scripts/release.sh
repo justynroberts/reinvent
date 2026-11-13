@@ -118,7 +118,7 @@ cat > "$notes" <<NOTES
 curl -fsSL https://raw.githubusercontent.com/$REPO/main/install.sh | sh
 \`\`\`
 
-You'll need a PagerDuty API key. Docker Desktop is needed only for the Kubernetes cluster steps.
+All you need is a PagerDuty API key.
 NOTES
 git tag -a "v$V" -m "Reinvent $V"
 git push origin "v$V"

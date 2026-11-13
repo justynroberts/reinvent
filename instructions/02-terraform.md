@@ -14,7 +14,7 @@ Everything in `terraform/` is plain PagerDuty provider config (`PagerDuty/pagerd
 ## Run it
 
 ```bash
-./trigger      # menu option 2 previews (read-only), option 3 creates
+./trigger      # SETUP → 3 previews (read-only), SETUP → 4 creates
 # or directly: ./trigger plan, ./trigger create
 ```
 
@@ -36,4 +36,4 @@ Without a terminal (CI, piped input), nothing is asked: saved values are checked
 - **Paige on the EP.** After you add Paige at level 1 in the UI, Terraform ignores `rule` changes on the escalation policy, so a re-apply won't remove her. The trade-off is that changing the human level in Terraform has no effect; edit it in the UI.
 - **Workflow steps.** Same pattern: Terraform ignores `step`. If you'd rather build all four workflows from UI templates, set `manage_incident_workflows = false` *before* the first apply. Otherwise you'll get name clashes.
 - **Intelligent grouping on a fresh service** may not merge the four alerts on the first run. For a guaranteed single incident, use `alert_grouping_type = "content_based"`, which groups on `source` (every payload sets the node name there).
-- **Destroy** removes everything Terraform created, including the workflow shells and any steps you added to them. Screenshot or export your steps first. `./trigger destroy` (menu option 9) resolves the scenario's alerts before it destroys.
+- **Destroy** removes everything Terraform created, including the workflow shells and any steps you added to them. Screenshot or export your steps first. `./trigger destroy` (SETUP → 6) resolves the scenario's alerts before it destroys.

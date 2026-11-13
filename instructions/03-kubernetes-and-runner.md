@@ -1,11 +1,14 @@
 # 03: Kubernetes cluster, demo workloads and the Automation Runner
 
+> **Optional, and done by hand for now.** The Reinvent app doesn't manage the cluster. The demo events work without one; only the live remediation beat needs it.
+
 The workflows act on a real cluster, so you need one. If your sandbox has no Kubernetes cluster, run **kind** on your laptop. The internal page *UA Runner Kind Cluster Management Script* covers the same ground; use it if it has moved on from what's written here.
 
 ## 1. Cluster
 
 ```bash
-./trigger cluster up        # menu option 4: creates the kind cluster if needed, applies the workloads
+brew install kind kubectl    # if missing; needs Docker Desktop running
+kind create cluster --config k8s/kind-config.yaml
 ```
 
 The cluster has a single node, `reinvent-control-plane`, which is the "same node" in the story. The payloads use this name (`payloads/scenario.json` → `vars.node`). If you use a different cluster, update `vars.node`, `vars.cluster` and `vars.namespace` there.
@@ -13,7 +16,7 @@ The cluster has a single node, `reinvent-control-plane`, which is the "same node
 ## 2. Demo workloads
 
 ```bash
-# done by ./trigger cluster up: applies k8s/healthcare.yaml and k8s/remediation-toolbox.yaml
+kubectl --context kind-reinvent apply -f k8s/healthcare.yaml -f k8s/remediation-toolbox.yaml
 kubectl -n healthcare get pods -o wide
 kubectl -n healthcare logs deploy/claims-reconciliation -f   # watch the "leak"
 ```
@@ -50,5 +53,6 @@ The runner itself is never given `patch` on Deployments. It execs into `claims-t
 ## Reset the cluster between demos
 
 ```bash
-./trigger cluster reset   # menu option 8: deletes and recreates the healthcare workloads (removes the applied memory limit)
+kubectl --context kind-reinvent -n healthcare delete deployment/claims-reconciliation pod/claims-reconciliation --ignore-not-found
+kubectl --context kind-reinvent apply -f k8s/healthcare.yaml   # back to the leaky, unlimited version
 ```

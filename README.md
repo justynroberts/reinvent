@@ -14,9 +14,8 @@ Reinvent opens in a Terminal window. Next time, open it from Spotlight (Cmd+Spac
 
 **What you need:**
 - A **PagerDuty API key** (PagerDuty → Integrations → API Access Keys). Reinvent asks for it, plus your region and login email, and checks each one.
-- **Docker Desktop** ([free download](https://www.docker.com/products/docker-desktop/)), only for the Kubernetes cluster steps.
 
-That's all. Reinvent downloads Terraform, kind and kubectl itself the first time it needs them. Choose **Check this Mac is ready** in the menu to confirm everything is in place. Your settings and state live in `~/Library/Application Support/Reinvent`.
+That's all. Reinvent downloads Terraform itself the first time it needs it. Choose **SETUP → 2 Check this Mac is ready** in the menu to confirm everything is in place. Your settings and state live in `~/Library/Application Support/Reinvent`.
 
 <details><summary>Prefer to download the file instead?</summary>
 
@@ -35,11 +34,11 @@ Download `Reinvent-macos.zip` from [the latest release](https://github.com/justy
 | [`app/`](app/) | Go source (rebuilt automatically by `./trigger` when it changes) |
 | [`scripts/release.sh`](scripts/release.sh) | Builds, verifies and (with `--publish`) releases `Reinvent.app` |
 | [`runbook/`](runbook/) | The claims-reconciliation runbook to upload for Paige |
-| [`k8s/`](k8s/) | kind cluster, leaky demo workloads, remediation toolbox + RBAC |
+| [`k8s/`](k8s/) | Optional kind cluster and workloads for the remediation beat. Not used by the app for now; see instructions/03 |
 
 ## Quick start
 
-You need Go, Terraform, and (for the cluster) Docker, kind and kubectl. `./trigger` tells you the install command for anything missing.
+You need Go. `./trigger` builds itself and fetches Terraform.
 
 ```bash
 ./trigger
@@ -47,12 +46,12 @@ You need Go, Terraform, and (for the cluster) Docker, kind and kubectl. `./trigg
 
 That's it. A full-screen menu opens with two pages: **SETUP** (do once) and **DEMO** (use on stage). Switch with ← →. Once setup is done it opens straight on DEMO. ★ marks the next step. It covers everything:
 settings (region US/EU, API key, your email, each checked against PagerDuty and saved to `.env`),
-creating the PagerDuty objects, the local cluster, running, resolving, resetting between demos, and teardown.
+creating the PagerDuty objects, running, resolving, exporting the payloads, and teardown.
 Anything that sends alerts or deletes something asks first.
 
 Between `create` and the first run, do the manual steps in [instructions/](instructions/).
 
-For scripts: `./trigger help` lists the subcommands (`setup`, `plan`, `create`, `run`, `resolve`, `destroy`, `cluster up|reset|down`).
+For scripts: `./trigger help` lists the subcommands (`setup`, `doctor`, `plan`, `create`, `run`, `resolve`, `export`, `destroy`).
 
 ## Editing the scenario
 

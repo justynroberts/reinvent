@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os/exec"
 	"time"
 )
 
 // cmdDoctor checks everything a demo needs and fixes what it can (it
-// downloads missing tools). Safe to run any time: it changes nothing in
-// PagerDuty or the cluster.
+// downloads Terraform if missing). Safe to run any time: it changes nothing
+// in PagerDuty.
 func cmdDoctor() error {
 	var c common
 	if err := c.resolveRoot(); err != nil {
@@ -36,17 +35,8 @@ func cmdDoctor() error {
 	check("PagerDuty settings (region, API key, email)", err, "In the menu: SETUP → 1 PagerDuty settings.")
 	_ = s
 
-	for _, t := range []string{"terraform", "kind", "kubectl"} {
-		_, err := tool(t)
-		check(t+" (downloaded automatically)", err, "")
-	}
-
-	docker, err := tool("docker")
-	check("Docker Desktop installed (cluster steps only)", err, "")
-	if err == nil {
-		err = exec.Command(docker, "info").Run()
-		check("Docker Desktop running", err, "Open Docker Desktop and wait until it says it's running.")
-	}
+	_, err = tool("terraform")
+	check("Terraform (downloaded automatically)", err, "")
 
 	fmt.Println()
 	if ok {

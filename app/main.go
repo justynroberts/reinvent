@@ -20,14 +20,13 @@ const usage = `usage: ./trigger              (opens the menu: start here)
 
 commands:
   setup     check or change region, API key and responder email
-  doctor    check this Mac: internet, PagerDuty settings, tools, Docker
+  doctor    check this Mac: internet, PagerDuty settings, Terraform
   export    write every event as plain JSON + send.sh/resolve.sh (-keys for real keys)
   plan      terraform init + plan (read-only)
   create    terraform init + apply in terraform/ (prompts unless -auto-approve)
   run       send the scenario in payloads/scenario.json to PagerDuty
   resolve   send resolve events for every alert in the scenario
   destroy   resolve open alerts, then terraform destroy (prompts unless -auto-approve)
-  cluster   up | reset | down: local kind cluster and demo workloads
 
 flags (after the command):
   -root DIR          repo root (default: found by walking up from the working dir)
@@ -71,8 +70,6 @@ func main() {
 		err = cmdExport(args)
 	case "version", "-v", "--version":
 		fmt.Println("reinvent", version)
-	case "cluster":
-		err = cmdCluster(args)
 	case "plan":
 		err = cmdPlan(args)
 	case "create":
@@ -208,7 +205,7 @@ func cmdCreate(args []string) error {
 	if err := planAndApply(c.tfDir(), vars, false, *auto, false); err != nil {
 		return err
 	}
-	fmt.Println("\nNext: the few steps done in the PagerDuty web app (SETUP → 6 \"Open the setup guide\"), then DEMO → 1 RUN THE DEMO.")
+	fmt.Println("\nNext: the few steps done in the PagerDuty web app (SETUP → 5 \"Open the setup guide\"), then DEMO → 1 RUN THE DEMO.")
 	return nil
 }
 

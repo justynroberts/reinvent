@@ -19,15 +19,15 @@ var logoRows = []string{
 	"...###############..",
 	"...############.....",
 	"....................",
-	"...####.............",
-	"...####.............",
 	"....................",
+	"...####.............",
+	"...####.............",
 }
 
 // pulseTrace is the heartbeat drawn beside the logo: a pager going off.
 var pulseTrace = []rune("──────────╱╲──╱╲╱╲╱───────────")
 
-const pulseRow = 8 // which logo row the trace sits beside (next to the stem)
+const pulseRow = 9 // which logo row the trace sits beside (next to the stem)
 
 // tileBG is PagerDuty green; empty means no colour (NO_COLOR).
 var tileBG, glyphFG = "\033[48;5;35m", "\033[97m"
@@ -116,7 +116,7 @@ func animateHeader() {
 	}
 	for r := 1; r <= len(logoRows); r++ {
 		d := 40 * time.Millisecond
-		if r == 7 {
+		if r == 8 {
 			d = 160 * time.Millisecond // beat before the stem drops in below the cut
 		}
 		frame(headerFrame{r, 0}, d)

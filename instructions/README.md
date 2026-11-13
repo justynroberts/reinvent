@@ -32,8 +32,8 @@ Work through these in order. The whole setup takes about 90 minutes the first ti
 | Four incident workflows: names, descriptions, triggers | 🟢 | Terraform `pagerduty_incident_workflow` + `_trigger` |
 | Major Incident and Paige workflow **steps** | 🟢 | Terraform, with action IDs checked on the account. Zoom must be connected (04); the Slack channel step needs `slack_workspace_id`. |
 | Kubernetes workflow **steps** | 🔴 | They bind to the Agent Connector and runner, which the provider can't look up. Added in the UI; Terraform ignores `step`. See 05. |
-| Demo Kubernetes workloads (leaky pod, neighbours, toolbox) | 🟢 | `k8s/*.yaml`, `./trigger cluster up` |
-| kind cluster | 🟢 | `./trigger cluster up` (needs Docker + `kind`) |
+| Demo Kubernetes workloads (leaky pod, neighbours, toolbox) | 🟡 | `k8s/*.yaml`, applied by hand with `kubectl` (03). Optional. |
+| kind cluster | 🟡 | `kind create cluster --config k8s/kind-config.yaml` (03). Optional. |
 | PD Automation Runner: register, credentials | 🔴 | Registration issues `RUNNER_ID` / `RUNNER_SECRET` in the UI |
 | PD Automation Runner: deploy and RBAC | 🟡 | Manifest from the runner KB / UA Runner Kind script. This repo adds only the narrow toolbox RBAC. |
 | Kubernetes Agent Connector (all tools) | 🔴 | UI only |

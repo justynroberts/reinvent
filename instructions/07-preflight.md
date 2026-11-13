@@ -3,9 +3,9 @@
 ## Day-before dry run
 
 - [ ] `make test` passes (the payloads render)
-- [ ] `./trigger plan` (menu option 2) shows no changes (nothing has drifted)
+- [ ] SETUP → 3 *Preview PagerDuty changes* says nothing to do (nothing has drifted)
 - [ ] Runner is **Healthy**; `kubectl -n healthcare get pods` shows all four pods Running
-- [ ] `./trigger run` (menu option 5) produces **one** P1 incident on `claims-reconciliation` containing four alerts. The info noise event is suppressed (check the service's alert log).
+- [ ] DEMO → 1 *RUN THE DEMO* opens a fresh incident on `claims-reconciliation` that groups the Kubernetes alerts from both services (no priority until Major Incident sets P1). The info noise event is suppressed (check the service's alert log).
 - [ ] Recent Changes shows the `v2.14.0` deploy
 - [ ] EO annotation is on the incident
 - [ ] `patient-portal` and `scheduling` show impacted (Business Services, internal status page)
@@ -15,13 +15,13 @@
 - [ ] Major Incident (manual): responders, stakeholders, Zoom link, Scribe joins
 - [ ] Kubernetes Remediation (manual): pod deleted and recreated, memory limit applied
 - [ ] Console view shows the Paige column + Alerts field
-- [ ] `./trigger resolve` (menu option 7), then the status page clears
+- [ ] DEMO → 2 *Resolve the demo*, then the status page clears
 
 ## Reset between demos
 
 ```bash
-./trigger resolve          # menu 7: resolve all scenario alerts
-./trigger cluster reset    # menu 8: put the leaky Deployment back (removes the memory limit)
+./trigger resolve          # DEMO → 2: resolve every open demo run
+kubectl --context kind-reinvent -n healthcare delete deployment/claims-reconciliation pod/claims-reconciliation --ignore-not-found && kubectl --context kind-reinvent apply -f k8s/healthcare.yaml   # only if you use the cluster
 # Archive or delete the Slack channel Paige created
 ```
 
@@ -30,8 +30,8 @@ The alert dedup keys are stable, so running the scenario again while an incident
 ## Tear down
 
 ```bash
-./trigger destroy          # menu 9: resolves, then terraform destroy (prompts)
-./trigger cluster down     # menu 10
+./trigger destroy          # SETUP → 6: resolves, then deletes (shows the list, asks)
+kind delete cluster --name reinvent   # only if you created it
 ```
 
 ## Enablement sessions to check

@@ -44,7 +44,7 @@ Reference: the orbitpay example linked in [story/brief.md](../story/brief.md).
 
 ## Kubernetes Remediation
 
-Reference: the orbitpay example linked in [story/brief.md](../story/brief.md). Build the variant that matches how claims-reconciliation runs in your cluster. `./trigger cluster up` runs it as a **Deployment**.
+Reference: the orbitpay example linked in [story/brief.md](../story/brief.md). Build the variant that matches how claims-reconciliation runs in your cluster. `k8s/healthcare.yaml` (03) runs it as a **Deployment**.
 
 ### Variant A: Pod Created through Deployment (default)
 

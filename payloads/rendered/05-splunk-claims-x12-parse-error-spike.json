@@ -8,7 +8,7 @@
     "custom_details": {
       "baseline_10m": 3,
       "count_10m": 2140,
-      "first_seen": "2026-11-12T13:49:02Z",
+      "first_seen": "2026-11-13T08:12:41Z",
       "library": "x12-claims-parser 5.0.0",
       "platform": "splunk",
       "search": "index=claims sourcetype=app level=ERROR | stats count by exception",
