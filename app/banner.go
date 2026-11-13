@@ -9,7 +9,7 @@ import (
 
 // logoRows is the PagerDuty-style mark: a green tile with a white "P" whose
 // stem is cut off below the bowl. '#' is white, '.' is the green tile.
-// Terminal cells are about twice as tall as wide, so 20×11 reads as square.
+// Terminal cells are about twice as tall as wide, so 20×12 reads as square.
 var logoRows = []string{
 	"....................",
 	"...############.....",
@@ -22,12 +22,8 @@ var logoRows = []string{
 	"...####.............",
 	"...####.............",
 	"...####.............",
+	"....................",
 }
-
-// pulseTrace is the heartbeat drawn beside the logo: a pager going off.
-var pulseTrace = []rune("──────────╱╲──╱╲╱╲╱───────────")
-
-const pulseRow = 9 // which logo row the trace sits beside (next to the stem)
 
 // tileBG is PagerDuty green; empty means no colour (NO_COLOR).
 var tileBG, glyphFG = "\033[48;5;35m", "\033[97m"
@@ -45,11 +41,10 @@ func init() {
 	}
 }
 
-// headerFrame is how much of the header is drawn: logo rows revealed and
-// how far the heartbeat has swept. The settled header is {len(logoRows), len(pulseTrace)}.
-type headerFrame struct{ rows, pulse int }
+// headerFrame is how much of the header is drawn: logo rows revealed.
+type headerFrame struct{ rows int }
 
-var settled = headerFrame{len(logoRows), len(pulseTrace)}
+var settled = headerFrame{len(logoRows)}
 
 // header renders the logo with the title beside it. Every line ends with
 // erase-to-end-of-line, so frames can be redrawn in place without flicker.
@@ -81,30 +76,15 @@ func header(f headerFrame) string {
 			b.WriteString(strings.Repeat(" ", len(row)))
 		}
 		b.WriteString("    ")
-		if i == pulseRow {
-			b.WriteString(pulse(f.pulse))
-		} else {
-			b.WriteString(side[i])
-		}
+		b.WriteString(side[i])
 		b.WriteString("\033[K\n")
 	}
 	b.WriteString("\033[K\n")
 	return b.String()
 }
 
-func pulse(n int) string {
-	if n <= 0 {
-		return ""
-	}
-	if n >= len(pulseTrace) {
-		return cAccent + string(pulseTrace) + cReset
-	}
-	return cAccent + string(pulseTrace[:n]) + cBold + "●" + cReset
-}
-
-// animateHeader plays once when the menu opens: the P builds row by row (with a
-// beat at the cut),
-// then the heartbeat sweeps across. It only redraws the header in place.
+// animateHeader plays once when the menu opens: the tile builds row by row,
+// with a beat at the cut before the stem. It only redraws the header in place.
 // Skipped for NO_COLOR, REINVENT_NO_ANIMATION and narrow windows.
 func animateHeader() {
 	if tileBG == "" || os.Getenv("REINVENT_NO_ANIMATION") != "" || termWidth() < 60 {
@@ -119,10 +99,6 @@ func animateHeader() {
 		if r == 8 {
 			d = 160 * time.Millisecond // beat before the stem drops in below the cut
 		}
-		frame(headerFrame{r, 0}, d)
+		frame(headerFrame{r}, d)
 	}
-	for p := 1; p <= len(pulseTrace); p++ {
-		frame(headerFrame{len(logoRows), p}, 28*time.Millisecond)
-	}
-	frame(settled, 0)
 }
